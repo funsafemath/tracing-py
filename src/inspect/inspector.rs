@@ -53,10 +53,12 @@ impl<'a> Inspector<'a> {
         let mod_name = PyAnyMethods::get_item(globals, "__name__")
             .expect("__name__ global variable must exist");
 
-        let s = if mod_name.is_none() {
+        let path_length = if mod_name.is_none() {
             0
         } else {
-            let s: Py<PyString> = mod_name.extract().expect("__name__ was modified");
+            let s: Py<PyString> = mod_name
+                .extract()
+                .expect("__name__ type must be str or None");
             s.to_string_lossy(self.py)
                 .chars()
                 .filter(|x| *x == '.')
@@ -71,7 +73,7 @@ impl<'a> Inspector<'a> {
         // (i haven't slept for a long time, so i'll do it later)
         path.components()
             .rev()
-            .take(s)
+            .take(path_length)
             .map(|x| x.as_os_str().to_string_lossy())
             .collect::<Vec<_>>()
             .into_iter()
