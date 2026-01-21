@@ -70,3 +70,6 @@ docs/_build/
 
 # Pyenv
 .python-version
+
+# not needed for now
+python/
