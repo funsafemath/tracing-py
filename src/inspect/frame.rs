@@ -2,7 +2,7 @@ use std::ffi::c_int;
 
 use pyo3::{
     ffi::{PyFrameObject, PyFrame_GetCode, PyFrame_GetLineNumber},
-    Python,
+    Py, Python,
 };
 
 use crate::inspect::Code;
@@ -51,6 +51,7 @@ impl<'a> Frame<'a> {
 
         // SAFETY: code is a valid object, and it obviously lives at least as long as the frame, which lives as long as
         // we don't return to the callsite, and that's exactly the lifetime of py
-        unsafe { Code::new(code, self.py) }
+        let code = unsafe { Py::from_owned_ptr(self.py, code as *mut pyo3::ffi::PyObject) };
+        Code::new(code.into_bound(self.py))
     }
 }
