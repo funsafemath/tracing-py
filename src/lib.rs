@@ -9,7 +9,8 @@ use crate::event::{py_debug, py_error, py_info, py_trace, py_warn};
 
 #[pyfunction]
 fn init() {
-    tracing_subscriber::fmt().compact().without_time().init();
+    // tracing_subscriber::fmt().compact().without_time().init();
+    tracing_subscriber::fmt().with_file(true).init();
 }
 
 #[pymodule(name = "tracing")]
