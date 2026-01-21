@@ -1,3 +1,4 @@
+use tracing::Metadata;
 use tracing_core::{Callsite, Interest};
 
 use crate::callsite::leak;
@@ -25,7 +26,7 @@ impl Callsite for EmptyCallsite {
         panic!("can't register empty callsite")
     }
 
-    fn metadata(&self) -> &crate::Metadata<'_> {
+    fn metadata(&self) -> &Metadata<'_> {
         panic!("can't access empty callsite")
     }
 }

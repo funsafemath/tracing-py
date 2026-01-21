@@ -1,7 +1,7 @@
 use std::ffi::c_int;
 
 use pyo3::{
-    ffi::{PyFrameObject, PyFrame_GetCode, PyFrame_GetLineNumber},
+    ffi::{self, PyFrameObject, PyFrame_GetCode, PyFrame_GetLineNumber},
     Bound, Py, Python,
 };
 
@@ -18,7 +18,7 @@ pub(crate) struct Frame<'a>(Bound<'a, PyFrameObject>);
 impl<'a> Frame<'a> {
     pub(crate) fn new(py: Python<'a>) -> Self {
         // SAFETY: Safe.
-        let frame = unsafe { pyo3::ffi::PyEval_GetFrame() };
+        let frame = unsafe { ffi::PyEval_GetFrame() };
 
         // SAFETY: PyEval_GetFrame return null or borrowed reference to PyFrameObject; from_borrowed_ptr checks for null
         let frame = unsafe { Py::from_borrowed_ptr(py, frame as *mut pyo3::ffi::PyObject) };
