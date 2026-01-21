@@ -1,7 +1,7 @@
 use pyo3::{
-    ffi::{PyBytesObject, PyCodeObject, PyObject_GetAttrString},
-    types::PyString,
-    Py, Python,
+    ffi::{PyBytesObject, PyCodeObject},
+    types::{PyAnyMethods, PyString},
+    Bound, Py,
 };
 
 unsafe extern "C" {
@@ -14,31 +14,31 @@ unsafe extern "C" {
     pub fn PyCode_GetCode(f: *mut PyCodeObject) -> *mut pyo3::ffi::PyObject;
 }
 
-pub(crate) struct Code<'a> {
-    code: *mut PyCodeObject,
-
-    py: Python<'a>,
-}
+pub(crate) struct Code<'a>(Bound<'a, PyCodeObject>);
 
 impl<'a> Code<'a> {
-    // SAFETY: code must be a valid PyCodeObject and must live at least as long as py
-    pub(super) unsafe fn new(code: *mut PyCodeObject, py: Python<'a>) -> Self {
-        Self { code, py }
+    pub(super) fn new(code: Bound<'a, PyCodeObject>) -> Self {
+        Self(code)
     }
 
     pub(crate) fn filename(&self) -> Py<PyString> {
-        // Neither PyO3 not Python C API provide a function to get co_filename
+        // Neither PyO3 not Python C API provide a function to get co_filename from a struct directly
 
-        // SAFETY: self.code is a valid PyObject, c"co_filename".as_ptr() is a valid C string
-        let name = unsafe { PyObject_GetAttrString(self.code as _, c"co_filename".as_ptr()) };
+        // PyObject_GetAttrString is probably faster, but it's unsafe, and I didn't find a function that gets an attr by string
+        // idk maybe it already uses it
+        let name = self
+            .0
+            .as_any()
+            .getattr("co_filename")
+            .expect("code object must have \"co_filename\" property");
 
-        // SAFETY: PyObject_GetAttrString returns an owned pointer or null, in the second case the function panics.
-        unsafe { Py::from_owned_ptr(self.py, name) }
+        name.extract()
+            .expect("\"co_filename\" of a code object must be a string")
     }
 
     pub(super) fn bytecode_addr(&'a self) -> usize {
-        // SAFETY: self.code is a valid PyCodeObject
-        let addr = unsafe { PyCode_GetCode(self.code) };
+        // SAFETY: self.code is a valid & bound PyCodeObject
+        let addr = unsafe { PyCode_GetCode(self.0.as_ptr().cast::<PyCodeObject>()) };
 
         if addr.is_null() {
             // same as new(), maybe just ignore & return, not panic?
@@ -50,7 +50,8 @@ impl<'a> Code<'a> {
         // we can store the ref somewhere, but i trust the python interpreter (peak rust safety)
         //
         // i really should find another way to uniquely identify the code
-        drop(unsafe { Py::<PyBytesObject>::from_owned_ptr(self.py, addr) });
+
+        drop(unsafe { Py::<PyBytesObject>::from_owned_ptr(self.0.py(), addr) });
 
         addr as usize
     }
