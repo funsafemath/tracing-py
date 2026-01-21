@@ -1,5 +1,5 @@
 use pyo3::{
-    ffi::{PyBytesObject, PyCodeObject},
+    ffi::{self, PyBytesObject, PyCodeObject},
     types::{PyAnyMethods, PyString},
     Bound, Py,
 };
@@ -11,7 +11,7 @@ unsafe extern "C" {
     // this may create a bytes object according to the docs, so maybe I should use another way to uniquely identify a code location
     //
     // returns a strong ref
-    pub fn PyCode_GetCode(f: *mut PyCodeObject) -> *mut pyo3::ffi::PyObject;
+    pub fn PyCode_GetCode(f: *mut PyCodeObject) -> *mut ffi::PyObject;
 }
 
 pub(crate) struct Code<'a>(Bound<'a, PyCodeObject>);
