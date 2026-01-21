@@ -3,8 +3,8 @@ requires = ["maturin>=1.9,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "tracing-py"
-requires-python = ">=3.8"
+name = "tracing"
+requires-python = ">=3.14"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -13,3 +13,7 @@ classifiers = [
 dynamic = ["version"]
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[tool.uv]
+# do not cache the rust library lol
+package = false

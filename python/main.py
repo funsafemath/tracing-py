@@ -1,16 +1,38 @@
-# This is a sample Python script.
+import inspect
+from functools import wraps
+from typing import Callable
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+8 to toggle the breakpoint.
+import tracing
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+def instrument(function: Callable):
+    signature = inspect.signature(function)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    @wraps(function)
+    def traced(*args, **kwargs):
+        print(args, kwargs)
+        for el in signature.parameters:
+            print(el)
+        return function(*args, **kwargs)
+
+    return traced
+
+
+tracing.init()
+
+import time
+import logging
+
+t = time.time()
+for i in range(100000):
+    # logging.error("error")
+    # logging.error("error")
+    # logging.error("error")
+    # logging.debug("error")
+    # logging.debug("error")
+    tracing.error("error")
+    tracing.warn("warn")
+    tracing.info("info")
+    tracing.debug("debug")
+    tracing.trace("trace")
+print(time.time() - t)

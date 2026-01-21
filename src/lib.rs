@@ -1,14 +1,25 @@
-use pyo3::prelude::*;
+mod callsite;
+mod event;
+mod inspect;
 
-/// Formats the sum of two numbers as string.
+use pyo3::prelude::*;
+use tracing::Metadata;
+
+use crate::event::{py_debug, py_error, py_info, py_trace, py_warn};
+
 #[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
+fn init() {
+    tracing_subscriber::fmt().compact().without_time().init();
 }
 
-/// A Python module implemented in Rust.
-#[pymodule]
-fn tracing_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+#[pymodule(name = "tracing")]
+fn tracing_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(py_error, m)?)?;
+    m.add_function(wrap_pyfunction!(py_warn, m)?)?;
+    m.add_function(wrap_pyfunction!(py_info, m)?)?;
+    m.add_function(wrap_pyfunction!(py_debug, m)?)?;
+    m.add_function(wrap_pyfunction!(py_trace, m)?)?;
+    m.add_function(wrap_pyfunction!(init, m)?)?;
+
     Ok(())
 }
