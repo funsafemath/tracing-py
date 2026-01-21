@@ -13,7 +13,7 @@ use tracing_core::{callsite::DefaultCallsite, Kind};
 
 use crate::{
     callsite::{default::CallsiteIdentifier, empty::EmptyCallsite, kind::CallsiteKind},
-    inspect::Frame,
+    inspect::{Frame, Inspector},
 };
 
 fn leak<T>(x: T) -> &'static T {
@@ -30,9 +30,10 @@ pub(crate) fn get_or_init_callsite(
         LazyLock::new(Mutex::default);
 
     let frame = Frame::new(py);
+    let inspector = Inspector::new(&frame);
 
     let identifier = CallsiteIdentifier::new(
-        frame.ix_address(),
+        inspector.ix_address(),
         level,
         &["message"],
         CallsiteKind::from(kind.clone()),
@@ -45,5 +46,5 @@ pub(crate) fn get_or_init_callsite(
         .unwrap()
         .entry(identifier.clone())
         // TODO: add fields
-        .or_insert_with(|| default::new_callsite(py, identifier))
+        .or_insert_with(|| default::new_callsite(inspector, identifier))
 }
