@@ -14,7 +14,7 @@ unsafe extern "C" {
     pub fn PyCode_GetCode(f: *mut PyCodeObject) -> *mut ffi::PyObject;
 }
 
-pub(crate) struct Code<'a>(Bound<'a, PyCodeObject>);
+pub(crate) struct Code<'a>(pub(super) Bound<'a, PyCodeObject>);
 
 impl<'a> Code<'a> {
     pub(super) fn new(code: Bound<'a, PyCodeObject>) -> Self {
@@ -34,6 +34,17 @@ impl<'a> Code<'a> {
 
         name.extract()
             .expect("\"co_filename\" of a code object must be a string")
+    }
+
+    pub(crate) fn target(&self) -> Py<PyString> {
+        let name = self
+            .0
+            .as_any()
+            .getattr("co_qualname")
+            .expect("code object must have \"co_qualname\" property");
+
+        name.extract()
+            .expect("\"co_qualname\" of a code object must be a string")
     }
 
     pub(super) fn bytecode_addr(&'a self) -> usize {
