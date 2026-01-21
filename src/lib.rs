@@ -7,7 +7,11 @@ use pyo3::prelude::*;
 
 #[pyfunction]
 fn init() {
-    tracing_subscriber::fmt().compact().without_time().init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_file(true)
+        .with_line_number(true)
+        .init();
 }
 
 #[pymodule(name = "tracing")]
