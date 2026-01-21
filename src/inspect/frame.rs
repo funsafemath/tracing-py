@@ -2,7 +2,7 @@ use std::ffi::c_int;
 
 use pyo3::{
     ffi::{PyFrameObject, PyFrame_GetCode, PyFrame_GetLineNumber},
-    Python,
+    Bound, Py, Python,
 };
 
 use crate::inspect::Code;
@@ -13,44 +13,38 @@ unsafe extern "C" {
     pub fn PyFrame_GetLasti(f: *mut PyFrameObject) -> c_int;
 }
 
-pub(crate) struct Frame<'a> {
-    frame: *mut PyFrameObject,
-
-    py: Python<'a>,
-}
+pub(crate) struct Frame<'a>(Bound<'a, PyFrameObject>);
 
 impl<'a> Frame<'a> {
     pub(crate) fn new(py: Python<'a>) -> Self {
-        // SAFETY: uhh... safe? the lifetime ensures that object can't be used anywhere
-        // after yielding the control back to interpreter (PyEval_GetFrame returns a borrowed reference)
+        // SAFETY: Safe.
         let frame = unsafe { pyo3::ffi::PyEval_GetFrame() };
-        if frame.is_null() {
-            // maybe just ignore & return, not panic?
-            panic!("interpreter frame is null");
-        }
 
-        Self { frame, py }
+        // SAFETY: PyEval_GetFrame return null or borrowed reference to PyFrameObject; from_borrowed_ptr checks for null
+        let frame = unsafe { Py::from_borrowed_ptr(py, frame as *mut pyo3::ffi::PyObject) };
+        Self(frame.into_bound(py))
     }
 
     pub(crate) fn line_number(&self) -> c_int {
         // SAFETY: self.frame is a valid frame
-        unsafe { PyFrame_GetLineNumber(self.frame) }
+        unsafe { PyFrame_GetLineNumber(self.0.as_ptr() as *mut PyFrameObject) }
     }
 
     pub(crate) fn ix_address(&self) -> usize {
         let code = self.code();
         // SAFETY: self.frame is a valid frame
-        let last_instruction_offset = usize::try_from(unsafe { PyFrame_GetLasti(self.frame) })
-            .expect("16-bit computers are not supported, sorry");
+        let last_instruction_offset =
+            usize::try_from(unsafe { PyFrame_GetLasti(self.0.as_ptr() as *mut PyFrameObject) })
+                .expect("16-bit computers are not supported, sorry");
         code.bytecode_addr() + last_instruction_offset
     }
 
     pub(crate) fn code(&'a self) -> Code<'a> {
         // SAFETY: self.frame is valid, result cannot be NULL: https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
-        let code = unsafe { PyFrame_GetCode(self.frame) };
+        let code = unsafe { PyFrame_GetCode(self.0.as_ptr() as *mut PyFrameObject) };
 
-        // SAFETY: code is a valid object, and it obviously lives at least as long as the frame, which lives as long as
-        // we don't return to the callsite, and that's exactly the lifetime of py
-        unsafe { Code::new(code, self.py) }
+        // SAFETY: code is indeed a PyCodeObject, and PyFrame_GetCode return a strong reference
+        let code = unsafe { Py::from_owned_ptr(self.0.py(), code as *mut pyo3::ffi::PyObject) };
+        Code::new(code.into_bound(self.0.py()))
     }
 }
