@@ -50,19 +50,25 @@ pub(super) fn new_callsite(
 
     let line = u32::try_from(frame.line_number()).expect("negative line number?");
 
-    let name = frame.code().filename();
-    let name = leak(format!("event {}", name.to_string_lossy(py)));
+    let code = frame.code();
+
+    let filename = leak(code.filename().to_string_lossy(py).into_owned());
+
+    let target = code.target();
+    let target = leak(target.to_string_lossy(py).into_owned());
+
+    // frame.module();
 
     let empty_callsite = EmptyCallsite::new();
 
     // todo: get relative paths somehow?
     let meta = leak(Metadata::new(
-        name,
-        "TODO",
+        leak(format!("event {}", filename)),
+        target,
         level,
-        Some(name),
+        Some(leak(frame.module())),
         Some(line),
-        Some("TODO"),
+        Some(leak(frame.module())),
         FieldSet::new(fields, Identifier(empty_callsite)),
         Kind::from(kind),
     ));

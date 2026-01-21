@@ -36,6 +36,17 @@ impl<'a> Code<'a> {
             .expect("\"co_filename\" of a code object must be a string")
     }
 
+    pub(crate) fn target(&self) -> Py<PyString> {
+        let name = self
+            .0
+            .as_any()
+            .getattr("co_qualname")
+            .expect("code object must have \"co_qualname\" property");
+
+        name.extract()
+            .expect("\"co_qualname\" of a code object must be a string")
+    }
+
     pub(super) fn bytecode_addr(&'a self) -> usize {
         // SAFETY: self.code is a valid & bound PyCodeObject
         let addr = unsafe { PyCode_GetCode(self.0.as_ptr().cast::<PyCodeObject>()) };
