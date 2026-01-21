@@ -7,13 +7,7 @@ use pyo3::{
 
 use crate::inspect::Code;
 
-unsafe extern "C" {
-    // https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetLasti
-    // added in 3.11, this crate targets 3.14+
-    pub fn PyFrame_GetLasti(f: *mut PyFrameObject) -> c_int;
-}
-
-pub(crate) struct Frame<'a>(Bound<'a, PyFrameObject>);
+pub(crate) struct Frame<'a>(pub(super) Bound<'a, PyFrameObject>);
 
 impl<'a> Frame<'a> {
     pub(crate) fn new(py: Python<'a>) -> Self {
@@ -28,15 +22,6 @@ impl<'a> Frame<'a> {
     pub(crate) fn line_number(&self) -> c_int {
         // SAFETY: self.frame is a valid frame
         unsafe { PyFrame_GetLineNumber(self.0.as_ptr() as *mut PyFrameObject) }
-    }
-
-    pub(crate) fn ix_address(&self) -> usize {
-        let code = self.code();
-        // SAFETY: self.frame is a valid frame
-        let last_instruction_offset =
-            usize::try_from(unsafe { PyFrame_GetLasti(self.0.as_ptr() as *mut PyFrameObject) })
-                .expect("16-bit computers are not supported, sorry");
-        code.bytecode_addr() + last_instruction_offset
     }
 
     pub(crate) fn code(&'a self) -> Code<'a> {
