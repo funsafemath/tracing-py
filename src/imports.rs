@@ -1,4 +1,9 @@
-use pyo3::{prelude::*, sync::PyOnceLock, types::PyType, PyTypeCheck};
+use pyo3::{
+    prelude::*,
+    sync::PyOnceLock,
+    types::{PyCFunction, PyType},
+    PyTypeCheck,
+};
 
 pub(super) static TEMPLATE_TYPE: PyOnceLock<Py<PyType>> = PyOnceLock::new();
 
@@ -15,6 +20,12 @@ pub(super) fn get_interpolation_type<'py>(py: Python<'py>) -> &'py Bound<'py, Py
         "string.templatelib",
         "Interpolation",
     )
+}
+
+pub(super) static WRAPT_DECORATOR: PyOnceLock<Py<PyCFunction>> = PyOnceLock::new();
+
+pub(super) fn get_wrapt_decorator<'py>(py: Python<'py>) -> &'py Bound<'py, PyCFunction> {
+    get_or_import(py, &WRAPT_DECORATOR, "wrapt", "decorator")
 }
 
 fn get_or_import<'py, 'a, T: PyTypeCheck>(

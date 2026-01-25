@@ -8,6 +8,7 @@ use tracing_core::{Callsite, Kind, LevelFilter};
 use valuable::Valuable;
 
 use crate::{
+    cached::{CachedDisplay, CachedValue},
     callsite::get_or_init_callsite,
     leak::{Leaker, VecLeaker},
     valuable::PyCachedValuable,
@@ -93,7 +94,7 @@ fn event(
     });
 }
 
-// yes, it's incredibly inefficient and leaks (if used correctly, fixed amount of) memory for no good reason,
+// yes, it's incredibly inefficient and leaks (if used correctly, a fixed amount of) memory for no good reason,
 // but fixing it requires giving up on fmt subscriber's pretty format of kwargs, patching the subscriber,
 // or patching the tracing-core
 fn with_fields_and_values(
@@ -135,7 +136,12 @@ fn with_fields_and_values(
     if let Some(message) = message {
         // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
         // todo: use valuable if message is a list/dict/bool/int/float/null
-        let args = format_args!("{}", PyCachedValuable::from(message));
+        // also should I cache the Display? not sure if the performance boost has more impact than the memory allocation overhead
+        // though it's probably possible to cached the value only if there's more than 1 active layer,
+        // that's more efficient
+        let message: CachedValue<_, _, CachedDisplay> =
+            CachedValue::from(PyCachedValuable::from(message));
+        let args = format_args!("{message}");
         // todo: do not use insert
         values.insert(0, Some(&args as &dyn Value));
         f(fields, &values);
