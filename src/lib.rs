@@ -7,11 +7,11 @@ mod callsite;
 mod event;
 mod imports;
 mod inspect;
-// mod instrument;
+mod instrument;
 mod layer;
 mod leak;
 mod level;
-// mod span;
+mod span;
 mod template;
 mod valuable;
 
@@ -28,10 +28,10 @@ mod tracing {
     use event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{init, FmtLayer, Format};
+    use layer::{py_init, FmtLayer, Format};
 
-    // #[pymodule_export]
-    // use instrument::py_instrument;
+    #[pymodule_export]
+    use instrument::py_instrument;
 
     #[pymodule_init]
     fn init_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
