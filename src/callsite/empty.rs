@@ -1,7 +1,7 @@
 use tracing::Metadata;
 use tracing_core::{Callsite, Interest};
 
-use crate::callsite::leak;
+use crate::leak::leak;
 
 #[derive(Debug)]
 pub(super) struct EmptyCallsite {
@@ -11,7 +11,7 @@ pub(super) struct EmptyCallsite {
     // we also can use addr of a leaked EmptyCallsite for the first DefaultCallsite,
     // and then use addr of previous callsite, reducing memory leaks, but this does not really matter
     //
-    // todo: patch tracing-core or something, i don't like this unholy abomination
+    // todo: patch tracing-core or something and remove this struct, i don't like this unholy abomination
     _byte: u8,
 }
 
