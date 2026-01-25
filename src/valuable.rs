@@ -1,0 +1,53 @@
+use std::fmt::{Display, Formatter};
+
+use pyo3::{Bound, PyAny};
+use valuable::{Valuable, Value, Visit};
+
+use crate::{
+    cached::{CachedValuable, CachedValue, GetValue},
+    template::{PyTemplate, PyTemplateMethodsExt},
+};
+
+impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {
+    fn value(&self) -> String {
+        self.to_string()
+    }
+}
+
+pub(super) enum PyCachedValuable<'py> {
+    Any(CachedValue<String, Bound<'py, PyAny>, CachedValuable>),
+    Template(CachedValue<String, Bound<'py, PyTemplate>, CachedValuable>),
+}
+
+// todo: log lists/dicts/bools/ints/floats/nulls as their respective json types
+impl<'py> Valuable for PyCachedValuable<'py> {
+    fn as_value(&self) -> Value<'_> {
+        match self {
+            PyCachedValuable::Any(cached_valuable) => cached_valuable.as_value(),
+            PyCachedValuable::Template(cached_valuable) => cached_valuable.as_value(),
+        }
+    }
+
+    fn visit(&self, visit: &mut dyn Visit) {
+        visit.visit_value(self.as_value());
+    }
+}
+
+impl<'py> From<Bound<'py, PyAny>> for PyCachedValuable<'py> {
+    fn from(value: Bound<'py, PyAny>) -> Self {
+        match value.cast_into::<PyTemplate>() {
+            Ok(template) => PyCachedValuable::Template(template.into()),
+            Err(value) => PyCachedValuable::Any(value.into_inner().into()),
+        }
+    }
+}
+
+impl<'py> Display for PyCachedValuable<'py> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let string = match self {
+            PyCachedValuable::Any(cached_value) => cached_value.inner_ref().to_string(),
+            PyCachedValuable::Template(cached_value) => cached_value.inner_ref().format(),
+        };
+        write!(f, "{string}")
+    }
+}
