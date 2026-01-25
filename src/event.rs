@@ -8,6 +8,7 @@ use tracing_core::{Callsite, Kind, LevelFilter};
 use valuable::Valuable;
 
 use crate::{
+    any_ext::PyAnyMethodsExt,
     callsite::get_or_init_callsite,
     leak::{Leaker, VecLeaker},
     valuable::PyCachedValuable,
@@ -60,6 +61,8 @@ pub(super) fn py_trace(
     message: Option<Bound<'_, PyAny>>,
     kwargs: Option<&Bound<'_, PyDict>>,
 ) {
+    println!("{:?}", message.unwrap().format(None));
+    panic!();
     event(py, Level::TRACE, message, kwargs);
 }
 
