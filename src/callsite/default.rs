@@ -5,8 +5,9 @@ use tracing_core::{
 };
 
 use crate::{
-    callsite::{leak, CallsiteKind, EmptyCallsite},
+    callsite::{CallsiteKind, EmptyCallsite},
     inspect::Inspector,
+    leak::{leak, Leaker},
 };
 
 // a single address can contain multiple callsites,
@@ -51,20 +52,22 @@ pub(super) fn new_callsite(
 
     let line = u32::try_from(frame.line_number()).expect("negative line number?");
 
-    let filename = leak(code.filename().to_string_lossy(py).into_owned());
+    let mut leaker = Leaker::acquire();
+
+    let filename = leaker.leak_or_get(code.filename().to_string_lossy(py).into_owned());
 
     let target = code.target();
-    let target = leak(target.to_string_lossy(py).into_owned());
+    let target = leaker.leak_or_get(target.to_string_lossy(py).into_owned());
 
     let empty_callsite = EmptyCallsite::new();
 
     let meta = leak(Metadata::new(
-        leak(format!("event {}", filename)),
+        leaker.leak_or_get(format!("event {}", filename)),
         target,
         level,
-        Some(leak(inspector.module())),
+        Some(leaker.leak_or_get(inspector.module())),
         Some(line),
-        Some(leak(inspector.module())),
+        Some(leaker.leak_or_get(inspector.module())),
         FieldSet::new(fields, Identifier(empty_callsite)),
         Kind::from(kind),
     ));
