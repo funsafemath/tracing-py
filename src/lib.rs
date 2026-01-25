@@ -1,5 +1,6 @@
 #![feature(adt_const_params)]
 #![feature(unsized_const_params)]
+#![feature(inherent_associated_types)]
 
 mod any_ext;
 mod cached;
@@ -8,6 +9,7 @@ mod event;
 mod imports;
 mod inspect;
 // mod instrument;
+mod layer;
 mod leak;
 mod level;
 // mod span;
@@ -16,29 +18,18 @@ mod valuable;
 
 use pyo3::prelude::*;
 
-#[pyfunction]
-fn init() {
-    tracing_subscriber::fmt()
-        .json()
-        .with_file(true)
-        .with_line_number(true)
-        .without_time()
-        .with_level(false)
-        .with_target(false)
-        .init();
-}
 #[pymodule(name = "tracing")]
 mod tracing {
     use super::*;
 
     #[pymodule_export]
-    use level::Level;
-
-    #[pymodule_export]
-    use super::init;
+    use level::PyLevel;
 
     #[pymodule_export]
     use event::{py_debug, py_error, py_info, py_trace, py_warn};
+
+    #[pymodule_export]
+    use layer::{init, FmtLayer, Format};
 
     // #[pymodule_export]
     // use instrument::py_instrument;
