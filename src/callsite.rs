@@ -9,7 +9,7 @@ use std::{
 
 use pyo3::Python;
 use tracing::Level;
-use tracing_core::{callsite::DefaultCallsite, Kind};
+use tracing_core::{Kind, callsite::DefaultCallsite};
 
 use crate::{
     callsite::{default::CallsiteIdentifier, empty::EmptyCallsite, kind::CallsiteKind},
@@ -43,24 +43,3 @@ pub(crate) fn get_or_init_callsite(
         // TODO: add fields
         .or_insert_with(|| default::new_callsite(inspector, identifier))
 }
-
-// fn emit(py: Python, level: Level, message: Py<PyString>, kind: Kind) {
-//     let callsite = get_or_init_callsite(py, level, kind);
-
-//     // that's a part of the event! macro expansion with the "log" feature off (it's pointless for python)
-//     let enabled = level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() && {
-//         let interest = callsite.interest();
-//         !interest.is_never()
-//             && tracing::__macro_support::__is_enabled(callsite.metadata(), interest)
-//     };
-
-//     if enabled {
-//         Event::dispatch(
-//             callsite.metadata(),
-//             &callsite
-//                 .metadata()
-//                 .fields()
-//                 .value_set_all(&[(Some(&format_args!("{message}") as &dyn Value))]),
-//         );
-//     }
-// }
