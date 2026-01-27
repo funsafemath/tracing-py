@@ -9,20 +9,17 @@ use std::{
 
 use pyo3::Python;
 use tracing::Level;
-use tracing_core::{callsite::DefaultCallsite, Kind};
+use tracing_core::{Kind, callsite::DefaultCallsite};
 
 use crate::{
     callsite::{default::CallsiteIdentifier, empty::EmptyCallsite, kind::CallsiteKind},
     inspect::{Frame, Inspector},
 };
 
-fn leak<T>(x: T) -> &'static T {
-    Box::leak(Box::new(x))
-}
-
 pub(crate) fn get_or_init_callsite(
     py: Python,
     level: Level,
+    fields: &'static [&'static str],
     kind: Kind,
 ) -> &'static DefaultCallsite {
     // no need to use rwlock/dashmap as we're forced into singlethreaded execution by GIL
@@ -35,12 +32,10 @@ pub(crate) fn get_or_init_callsite(
     let identifier = CallsiteIdentifier::new(
         inspector.ix_address(),
         level,
-        &["message"],
+        fields,
         CallsiteKind::from(kind.clone()),
     );
 
-    // copying 40 bytes is cheap, but since it's done in the happy path, it may be worth to rewrite this function
-    // to save a billionth of a µs (and maybe not if compiler optimizes it)
     CALLSITES
         .lock()
         .unwrap()
