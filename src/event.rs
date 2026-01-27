@@ -72,11 +72,11 @@ fn event(
     callsite::do_action(py, level, Kind::EVENT, EventAction { message, kwargs });
 }
 
-struct EventAction<'py> {
-    message: Option<Bound<'py, PyAny>>,
+struct EventAction<'a, 'py> {
+    message: Option<Bound<'a, PyAny>>,
     kwargs: Option<&'py Bound<'py, PyDict>>,
 }
-impl<'py> CallsiteAction for EventAction<'py> {
+impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     type ReturnType = ();
 
     // yes, it's incredibly inefficient and leaks (if used correctly, a fixed amount of) memory for no good reason,
