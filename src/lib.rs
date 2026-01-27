@@ -1,17 +1,21 @@
 #![feature(adt_const_params)]
 #![feature(unsized_const_params)]
+#![feature(exact_size_is_empty)]
 
 mod any_ext;
 mod cached;
 mod callsite;
+mod contextvar;
 mod event;
+mod ffi_ext;
+mod function_ext;
 mod imports;
 mod inspect;
-// mod instrument;
+mod instrument;
 mod layer;
 mod leak;
 mod level;
-// mod span;
+mod span;
 mod template;
 mod valuable;
 
@@ -28,14 +32,14 @@ mod tracing {
     use event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{init, FmtLayer, Format};
+    use layer::{FmtLayer, Format, py_init};
 
     // #[pymodule_export]
     // use instrument::py_instrument;
 
     #[pymodule_init]
     fn init_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
-        // module.add("instrument", instrument::INSTRUMENT.clone_ref(module.py()))?;
+        module.add("instrument", instrument::INSTRUMENT.clone_ref(module.py()))?;
         Ok(())
     }
 }

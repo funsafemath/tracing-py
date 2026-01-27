@@ -8,9 +8,9 @@ use tracing_subscriber::{
 };
 
 // todo: accept *args instead of a Sequence
-#[pyfunction]
+#[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
-pub(crate) fn init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
+pub(crate) fn py_init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
     let layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = match layers {
         Some(layers) => {
             if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
