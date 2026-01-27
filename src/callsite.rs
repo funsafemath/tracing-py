@@ -48,15 +48,23 @@ pub(crate) fn get_or_init_callsite(
 pub(crate) trait CallsiteAction {
     type ReturnType;
 
-    fn with_fields_and_values(self, f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]));
+    fn with_fields_and_values(
+        self,
+        f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<Self::ReturnType>,
+    ) -> Option<Self::ReturnType>;
 
     fn do_if_enabled(
         callsite: &'static impl Callsite,
         values: &[Option<&dyn Value>],
-    ) -> Option<Self::ReturnType>;
+    ) -> Self::ReturnType;
 }
 
-pub(crate) fn do_action<A: CallsiteAction>(py: Python, level: Level, kind: Kind, action: A) {
+pub(crate) fn do_action<A: CallsiteAction>(
+    py: Python,
+    level: Level,
+    kind: Kind,
+    action: A,
+) -> Option<A::ReturnType> {
     if level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() {
         action.with_fields_and_values(|fields, values| {
             // todo: maybe remove the fields from the callsite id,
@@ -71,8 +79,12 @@ pub(crate) fn do_action<A: CallsiteAction>(py: Python, level: Level, kind: Kind,
             };
 
             if enabled {
-                A::do_if_enabled(callsite, values);
+                Some(A::do_if_enabled(callsite, values))
+            } else {
+                None
             }
-        });
+        })
+    } else {
+        None
     }
 }

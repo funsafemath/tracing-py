@@ -84,8 +84,8 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     // or patching the tracing-core
     fn with_fields_and_values(
         self,
-        f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]),
-    ) {
+        f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<()>,
+    ) -> Option<()> {
         let mut fields = vec![];
         let mut values = vec![];
 
@@ -128,20 +128,16 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
             let args = format_args!("{message}");
             // todo: do not use insert
             values.insert(0, Some(&args as &dyn Value));
-            f(fields, &values);
+            f(fields, &values)
         } else {
-            f(fields, &values);
+            f(fields, &values)
         }
     }
 
-    fn do_if_enabled(
-        callsite: &'static impl Callsite,
-        values: &[Option<&dyn Value>],
-    ) -> Option<()> {
+    fn do_if_enabled(callsite: &'static impl Callsite, values: &[Option<&dyn Value>]) {
         Event::dispatch(
             callsite.metadata(),
             &callsite.metadata().fields().value_set_all(values),
         );
-        Some(())
     }
 }
