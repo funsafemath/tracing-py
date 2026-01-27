@@ -3,12 +3,39 @@ use std::{
     sync::{LazyLock, Mutex, MutexGuard},
 };
 
+use pyo3::{
+    Bound,
+    types::{PyDict, PyDictMethods},
+};
+
+use crate::valuable::PyCachedValuable;
+
 static LEAKED_STRINGS: LazyLock<Mutex<HashSet<&'static str>>> = LazyLock::new(Mutex::default);
 static LEAKED_SLICES: LazyLock<Mutex<HashSet<&'static [&'static str]>>> =
     LazyLock::new(Mutex::default);
 
 pub(super) fn leak<T>(x: T) -> &'static T {
     Box::leak(Box::new(x))
+}
+
+pub(crate) fn leak_or_get_kwargs<'py>(
+    // todo: accept a mut ref
+    leaker: Option<Leaker>,
+    kwargs: Option<&Bound<'py, PyDict>>,
+) -> (Vec<&'static str>, Vec<PyCachedValuable<'py>>) {
+    let mut fields = vec![];
+    let mut values = vec![];
+
+    if let Some(kwargs) = kwargs {
+        let mut leaker = leaker.unwrap_or(Leaker::acquire());
+
+        for (key, value) in kwargs.iter() {
+            fields.push(leaker.leak_or_get(key.to_string()));
+            values.push(PyCachedValuable::from(value));
+        }
+    }
+
+    (fields, values)
 }
 
 // todo: generalize these structs

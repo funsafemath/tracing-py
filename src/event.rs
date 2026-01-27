@@ -2,14 +2,14 @@ use pyo3::{
     Bound, PyAny, Python, pyfunction,
     types::{PyDict, PyDictMethods},
 };
-use tracing::{Event, Level, Value};
+use tracing::{Event, Level, Value, field::ValueSet};
 use tracing_core::{Callsite, Kind};
 use valuable::Valuable;
 
 use crate::{
     cached::{CachedDisplay, CachedValue},
     callsite::{self, CallsiteAction},
-    leak::{Leaker, VecLeaker},
+    leak::{Leaker, VecLeaker, leak_or_get_kwargs},
     valuable::PyCachedValuable,
 };
 
@@ -69,14 +69,16 @@ fn event(
     message: Option<Bound<'_, PyAny>>,
     kwargs: Option<&Bound<'_, PyDict>>,
 ) {
-    callsite::do_action(py, level, Kind::EVENT, EventAction { message, kwargs });
+    callsite::do_action(py, level, EventAction { message, kwargs });
 }
 
 struct EventAction<'a, 'py> {
     message: Option<Bound<'py, PyAny>>,
     kwargs: Option<&'a Bound<'py, PyDict>>,
 }
+
 impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
+    const KIND: Kind = Kind::EVENT;
     type ReturnType = ();
 
     // yes, it's incredibly inefficient and leaks (if used correctly, a fixed amount of) memory for no good reason,
@@ -86,23 +88,10 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         self,
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<()>,
     ) -> Option<()> {
-        let mut fields = vec![];
-        let mut values = vec![];
+        let (mut fields, values) = leak_or_get_kwargs(None, self.kwargs);
 
-        if self.message.is_some() {
-            fields.push("message");
-        }
-
-        {
-            let mut leaker = Leaker::acquire();
-
-            if let Some(kwargs) = self.kwargs {
-                for (key, value) in kwargs.iter() {
-                    fields.push(leaker.leak_or_get(key.to_string()));
-                    values.push(PyCachedValuable::from(value));
-                }
-            }
-        }
+        // todo: do not use insert
+        fields.insert(0, "message");
 
         let fields: &'static [&'static str] = VecLeaker::leak_or_get_once(fields);
 
@@ -134,10 +123,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         }
     }
 
-    fn do_if_enabled(callsite: &'static impl Callsite, values: &[Option<&dyn Value>]) {
-        Event::dispatch(
-            callsite.metadata(),
-            &callsite.metadata().fields().value_set_all(values),
-        );
+    fn do_if_enabled(metadata: &'static tracing::Metadata, values: &ValueSet) -> Self::ReturnType {
+        Event::dispatch(metadata, values);
     }
 }
