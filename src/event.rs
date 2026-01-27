@@ -1,14 +1,14 @@
 use pyo3::{
-    pyfunction,
+    Bound, PyAny, Python, pyfunction,
     types::{PyDict, PyDictMethods},
-    Bound, PyAny, Python,
 };
-use tracing::{level_filters, Event, Level, Value};
-use tracing_core::{Callsite, Kind, LevelFilter};
+use tracing::{Event, Level, Value};
+use tracing_core::{Callsite, Kind};
 use valuable::Valuable;
 
 use crate::{
-    callsite::get_or_init_callsite,
+    cached::{CachedDisplay, CachedValue},
+    callsite::{self, CallsiteAction},
     leak::{Leaker, VecLeaker},
     valuable::PyCachedValuable,
 };
@@ -69,77 +69,79 @@ fn event(
     message: Option<Bound<'_, PyAny>>,
     kwargs: Option<&Bound<'_, PyDict>>,
 ) {
-    with_fields_and_values(message, kwargs, |fields, values| {
-        // todo: filter by level before calling with_fields_and_values
-        // also maybe remove the fields from the callsite id,
-        // so filtering by callsite can be done before fields extraction
-        let callsite = get_or_init_callsite(py, level, fields, Kind::EVENT);
-
-        // that's a part of the event! macro expansion with the "log" feature off (it's pointless for python)
-        let enabled =
-            level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() && {
-                let interest = callsite.interest();
-                !interest.is_never()
-                // oh not, it's not a stable api
-                    && tracing::__macro_support::__is_enabled(callsite.metadata(), interest)
-            };
-
-        if enabled {
-            Event::dispatch(
-                callsite.metadata(),
-                &callsite.metadata().fields().value_set_all(values),
-            )
-        }
-    });
+    callsite::do_action(py, level, Kind::EVENT, EventAction { message, kwargs });
 }
 
-// yes, it's incredibly inefficient and leaks (if used correctly, fixed amount of) memory for no good reason,
-// but fixing it requires giving up on fmt subscriber's pretty format of kwargs, patching the subscriber,
-// or patching the tracing-core
-fn with_fields_and_values(
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-    f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]),
-) {
-    let mut fields = vec![];
-    let mut values = vec![];
+struct EventAction<'a, 'py> {
+    message: Option<Bound<'py, PyAny>>,
+    kwargs: Option<&'a Bound<'py, PyDict>>,
+}
+impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
+    type ReturnType = ();
 
-    if message.is_some() {
-        fields.push("message");
-    }
+    // yes, it's incredibly inefficient and leaks (if used correctly, a fixed amount of) memory for no good reason,
+    // but fixing it requires giving up on fmt subscriber's pretty format of kwargs, patching the subscriber,
+    // or patching the tracing-core
+    fn with_fields_and_values(
+        self,
+        f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]),
+    ) {
+        let mut fields = vec![];
+        let mut values = vec![];
 
-    {
-        let mut leaker = Leaker::acquire();
+        if self.message.is_some() {
+            fields.push("message");
+        }
 
-        if let Some(kwargs) = kwargs {
-            for (key, value) in kwargs.iter() {
-                fields.push(leaker.leak_or_get(key.to_string()));
-                values.push(PyCachedValuable::from(value));
+        {
+            let mut leaker = Leaker::acquire();
+
+            if let Some(kwargs) = self.kwargs {
+                for (key, value) in kwargs.iter() {
+                    fields.push(leaker.leak_or_get(key.to_string()));
+                    values.push(PyCachedValuable::from(value));
+                }
             }
+        }
+
+        let fields: &'static [&'static str] = VecLeaker::leak_or_get_once(fields);
+
+        // this vector seems unnecessary
+        let values = values
+            .iter()
+            .map(|x| x as &dyn Valuable)
+            .collect::<Vec<_>>();
+
+        let mut values = values
+            .iter()
+            .map(|x| Some(x as &dyn Value))
+            .collect::<Vec<_>>();
+
+        if let Some(message) = self.message {
+            // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
+            // todo: use valuable if message is a list/dict/bool/int/float/null
+            // also should I cache the Display? not sure if the performance boost has more impact than the memory allocation overhead
+            // though it's probably possible to cached the value only if there's more than 1 active layer,
+            // that's more efficient
+            let message: CachedValue<_, _, CachedDisplay> =
+                CachedValue::from(PyCachedValuable::from(message));
+            let args = format_args!("{message}");
+            // todo: do not use insert
+            values.insert(0, Some(&args as &dyn Value));
+            f(fields, &values);
+        } else {
+            f(fields, &values);
         }
     }
 
-    let fields: &'static [&'static str] = VecLeaker::leak_or_get_once(fields);
-
-    // this vector seems unnecessary
-    let values = values
-        .iter()
-        .map(|x| x as &dyn Valuable)
-        .collect::<Vec<_>>();
-
-    let mut values = values
-        .iter()
-        .map(|x| Some(x as &dyn Value))
-        .collect::<Vec<_>>();
-
-    if let Some(message) = message {
-        // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
-        // todo: use valuable if message is a list/dict/bool/int/float/null
-        let args = format_args!("{}", PyCachedValuable::from(message));
-        // todo: do not use insert
-        values.insert(0, Some(&args as &dyn Value));
-        f(fields, &values);
-    } else {
-        f(fields, &values);
+    fn do_if_enabled(
+        callsite: &'static impl Callsite,
+        values: &[Option<&dyn Value>],
+    ) -> Option<()> {
+        Event::dispatch(
+            callsite.metadata(),
+            &callsite.metadata().fields().value_set_all(values),
+        );
+        Some(())
     }
 }
