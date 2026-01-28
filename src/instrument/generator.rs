@@ -1,7 +1,7 @@
 use pyo3::{IntoPyObjectExt, prelude::*, types::PyType};
 use tracing::Span;
 
-use crate::{any_ext::InfallibleAttr, imports::get_generator_type};
+use crate::{imports::get_generator_type, infallible_attr};
 
 // todo: impl all generator methods, use proper inner type
 #[pyclass]
@@ -27,20 +27,12 @@ impl InstrumentedGenerator {
     // todo: use c iter next method directly (the performance is already great actually)
     fn __next__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let _enter = self.span.enter();
-        self.inner
-            .bind(py)
-            .infallible_attr::<"__next__", PyAny>()
-            .call0()
+        infallible_attr!(self.inner, "__next__", py).call0()
     }
 
     // we can pretty much always return Self, but let's call the actual __iter__ method just to be sure
     fn __iter__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let _enter = self.span.enter();
-        let iterable = self
-            .inner
-            .bind(py)
-            .infallible_attr::<"__iter__", PyAny>()
-            .call0()?;
+        let iterable = infallible_attr!(self.inner, "__iter__", py).call0()?;
         InstrumentedGenerator {
             inner: iterable.unbind(),
             span: self.span.clone(),

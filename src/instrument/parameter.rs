@@ -1,6 +1,6 @@
-use pyo3::{prelude::*, sync::PyOnceLock, PyTypeInfo};
+use pyo3::{PyTypeInfo, prelude::*, sync::PyOnceLock};
 
-use crate::{any_ext::InfallibleAttr, imports::get_inspect_parameter_type};
+use crate::{imports::get_inspect_parameter_type, infallible_attr};
 
 #[repr(transparent)]
 pub(crate) struct PyParameter(PyAny);
@@ -23,7 +23,7 @@ pub(crate) trait PyParameterMethods<'py> {
 
 impl<'py> PyParameterMethods<'py> for Bound<'py, PyParameter> {
     fn kind(&self) -> ParamKind {
-        ParamKind::maybe_from(self.infallible_attr::<"kind", PyAny>().as_borrowed()).unwrap()
+        ParamKind::maybe_from(infallible_attr!(self, "kind")).unwrap()
     }
 
     fn has_default(&self) -> bool {
@@ -31,9 +31,7 @@ impl<'py> PyParameterMethods<'py> for Bound<'py, PyParameter> {
         // inspect's functions will treat it as if there is no default parameter
         // todo: fix it??
         // also it breaks the invariant that required parameters can follow optional ones (inspect doesn't validate it)
-        !self
-            .infallible_attr::<"default", PyAny>()
-            .is(empty_default(self.py()))
+        !infallible_attr!(self, "default").is(empty_default(self.py()))
     }
 }
 
@@ -42,9 +40,7 @@ fn empty_default(py: Python<'_>) -> &Bound<'_, PyAny> {
 
     EMPTY_DEFAULT
         .get_or_init(py, || {
-            get_inspect_parameter_type(py)
-                .infallible_attr::<"empty", PyAny>()
-                .unbind()
+            infallible_attr!(get_inspect_parameter_type(py), "empty").unbind()
         })
         .bind(py)
 }
@@ -59,7 +55,7 @@ pub(crate) enum ParamKind {
 }
 
 impl ParamKind {
-    fn maybe_from(param: Borrowed<'_, '_, PyAny>) -> Option<Self> {
+    fn maybe_from(param: Bound<'_, PyAny>) -> Option<Self> {
         let py = param.py();
 
         if param.is(Self::pos_only(py)) {
@@ -82,9 +78,7 @@ impl ParamKind {
 
         POS_ONLY
             .get_or_init(py, || {
-                get_inspect_parameter_type(py)
-                    .infallible_attr::<"POSITIONAL_ONLY", PyAny>()
-                    .unbind()
+                infallible_attr!(get_inspect_parameter_type(py), "POSITIONAL_ONLY").unbind()
             })
             .bind(py)
     }
@@ -94,9 +88,7 @@ impl ParamKind {
 
         POS_KW
             .get_or_init(py, || {
-                get_inspect_parameter_type(py)
-                    .infallible_attr::<"POSITIONAL_OR_KEYWORD", PyAny>()
-                    .unbind()
+                infallible_attr!(get_inspect_parameter_type(py), "POSITIONAL_OR_KEYWORD").unbind()
             })
             .bind(py)
     }
@@ -106,9 +98,7 @@ impl ParamKind {
 
         EXCESS_ARGS
             .get_or_init(py, || {
-                get_inspect_parameter_type(py)
-                    .infallible_attr::<"VAR_POSITIONAL", PyAny>()
-                    .unbind()
+                infallible_attr!(get_inspect_parameter_type(py), "VAR_POSITIONAL").unbind()
             })
             .bind(py)
     }
@@ -118,9 +108,7 @@ impl ParamKind {
 
         KW_ONLY
             .get_or_init(py, || {
-                get_inspect_parameter_type(py)
-                    .infallible_attr::<"KEYWORD_ONLY", PyAny>()
-                    .unbind()
+                infallible_attr!(get_inspect_parameter_type(py), "KEYWORD_ONLY").unbind()
             })
             .bind(py)
     }
@@ -130,9 +118,7 @@ impl ParamKind {
 
         EXCESS_KWARGS
             .get_or_init(py, || {
-                get_inspect_parameter_type(py)
-                    .infallible_attr::<"VAR_KEYWORD", PyAny>()
-                    .unbind()
+                infallible_attr!(get_inspect_parameter_type(py), "VAR_KEYWORD").unbind()
             })
             .bind(py)
     }

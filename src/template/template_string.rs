@@ -1,6 +1,6 @@
-use pyo3::{prelude::*, types::PyTuple, PyTypeInfo};
+use pyo3::{PyTypeInfo, prelude::*, types::PyTuple};
 
-use crate::{any_ext::InfallibleAttr, imports::get_template_type};
+use crate::{imports::get_template_type, infallible_attr};
 
 #[repr(transparent)]
 pub(crate) struct PyTemplate(PyAny);
@@ -24,10 +24,10 @@ pub(crate) trait PyTemplateMethods<'py> {
 
 impl<'py> PyTemplateMethods<'py> for Bound<'py, PyTemplate> {
     fn strings(&self) -> Bound<'py, PyTuple> {
-        self.infallible_attr::<"strings", PyTuple>()
+        infallible_attr!(self, "strings")
     }
 
     fn interpolations(&self) -> Bound<'py, PyTuple> {
-        self.infallible_attr::<"interpolations", PyTuple>()
+        infallible_attr!(self, "interpolations")
     }
 }
