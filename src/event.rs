@@ -2,7 +2,7 @@ use pyo3::{
     Bound, PyAny, Python, pyfunction,
     types::{PyDict, PyDictMethods},
 };
-use tracing::{Event, Level, Value, field::ValueSet};
+use tracing::{Event, Level, Metadata, Value, field::ValueSet};
 use tracing_core::Kind;
 use valuable::Valuable;
 
@@ -145,7 +145,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         }
     }
 
-    fn do_if_enabled(metadata: &'static tracing::Metadata, values: &ValueSet) -> Self::ReturnType {
+    fn do_if_enabled(metadata: &'static Metadata, values: &ValueSet) -> Self::ReturnType {
         Event::dispatch(metadata, values);
     }
 }
