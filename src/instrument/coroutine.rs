@@ -13,9 +13,9 @@ pub(crate) struct InstrumentedCoroutine {
 }
 
 impl InstrumentedCoroutine {
-    pub(crate) fn new(generator: Py<PyAny>, span: Span) -> Self {
+    pub(crate) fn new(coroutine: Py<PyAny>, span: Span) -> Self {
         Self {
-            inner: generator,
+            inner: coroutine,
             span,
         }
     }

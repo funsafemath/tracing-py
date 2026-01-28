@@ -18,8 +18,7 @@ impl InstrumentedGenerator {
 
 #[pymethods]
 impl InstrumentedGenerator {
-    // there must be a better way to set the superclass
-    // also this does not get added to asyncio coroutine classes cache for some reason? or maybe it is, not sure
+    // see coroutine comment
     #[getter]
     fn __class__<'py>(&self, py: Python<'py>) -> &Bound<'py, PyType> {
         get_generator_type(py)

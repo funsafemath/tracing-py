@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use eyre::{ContextCompat, bail};
+use eyre::{ContextCompat, bail, eyre};
 use pyo3::{
     exceptions::PyTypeError,
     prelude::*,
@@ -66,7 +66,6 @@ impl Signature {
 
         let mut bound_args: Vec<Option<Bound<'py, PyAny>>> = vec![None; self.param_names.len()];
 
-        // let mut excess_kwargs: HashMap<String, Bound<'py, PyAny>> = HashMap::default();
         let mut excess_kwargs: Vec<(Bound<'py, PyString>, Bound<'py, PyAny>)> = Vec::new();
 
         let mut args = args.into_iter();
@@ -86,7 +85,12 @@ impl Signature {
                 let kw_name: Bound<'py, PyString> = kw_name.cast_into().unwrap();
                 let index = self.kwarg_to_index.get(kw_name.to_str().unwrap());
                 match index {
-                    Some(index) => bound_args[*index] = Some(kw_value),
+                    Some(index) => {
+                        if bound_args[*index].is_some() {
+                            bail!("arg \"{kw_name}\" passed twice")
+                        }
+                        bound_args[*index] = Some(kw_value);
+                    }
                     None => {
                         if self.has_excess_kwargs() {
                             excess_kwargs.push((kw_name, kw_value));
@@ -99,14 +103,14 @@ impl Signature {
         }
 
         if self.has_excess_args() {
-            let list = PyList::new(py, excess_args).unwrap();
+            let list = PyList::new(py, excess_args)?;
             bound_args[self.pos_only + self.pos_or_kw] = Some(list.into_any());
         }
 
         if self.has_excess_kwargs() {
-            let list = PyList::new(py, excess_kwargs).unwrap();
+            let list = PyList::new(py, excess_kwargs)?;
             let last = bound_args.len() - 1;
-            bound_args[last] = Some(PyDict::from_sequence(&list).unwrap().into_any());
+            bound_args[last] = Some(PyDict::from_sequence(&list)?.into_any());
         }
 
         if let Some(defaults) = defaults {
@@ -124,7 +128,10 @@ impl Signature {
             let kw_defaults = kw_defaults.into_iter();
 
             for (kw_name, kw_value) in kw_defaults {
-                let kw_name = kw_name.cast::<PyString>().unwrap().to_str().unwrap();
+                let kw_name = kw_name
+                    .cast::<PyString>()
+                    .map_err(|x| eyre!("unreachable: kwarg name is not a string, {x}"))?
+                    .to_str()?;
                 if let Some(kw_idx) = self.kwarg_to_index.get(kw_name) {
                     let entry = &mut bound_args[*kw_idx];
                     if entry.is_none() {
@@ -137,13 +144,11 @@ impl Signature {
         bound_args
             .into_iter()
             .collect::<Option<Vec<_>>>()
-            .context("not enough arguments")
+            .wrap_err("not enough arguments")
     }
 }
 
-// Builds a Signature using inspect.signature
-// inspect.signature is actually not that slow for non-native functions,
-// todo: cache signatures
+// inspect.signature is actually not that slow for non-native functions, and we call it only once per instrumented function
 pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<Signature> {
     let signature = get_inspect_signature(func.py())
         .call1((func,))?
@@ -164,7 +169,7 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
     for (i, param_tuple) in params.items()?.into_iter().enumerate() {
         let param_tuple = param_tuple.cast::<PyTuple>()?;
         let param_name = param_tuple.get_item(0)?;
-        let param_name = leaker.leak_or_get(param_name.str().unwrap().to_string());
+        let param_name = leaker.leak_or_get(param_name.str()?.to_str()?.to_owned());
         let param = param_tuple.get_item(1)?.cast_into::<PyParameter>()?;
         match param.kind() {
             ParamKind::PositionalOnly => pos_only += 1,
