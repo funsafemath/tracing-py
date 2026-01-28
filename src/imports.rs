@@ -1,21 +1,34 @@
-use pyo3::{prelude::*, sync::PyOnceLock, types::PyType, PyTypeCheck};
+use pyo3::{
+    PyTypeCheck,
+    prelude::*,
+    sync::PyOnceLock,
+    types::{PyFunction, PyType},
+};
 
-pub(super) static TEMPLATE_TYPE: PyOnceLock<Py<PyType>> = PyOnceLock::new();
+macro_rules! mk_import {
+    ($fn_name:ident, $module:expr, $item:expr, $type:ty) => {
+        pub(super) fn $fn_name<'py>(py: Python<'py>) -> &'py Bound<'py, $type> {
+            static LOCK: PyOnceLock<Py<$type>> = PyOnceLock::new();
 
-pub(super) fn get_template_type<'py>(py: Python<'py>) -> &'py Bound<'py, PyType> {
-    get_or_import(py, &TEMPLATE_TYPE, "string.templatelib", "Template")
+            get_or_import(py, &LOCK, $module, $item)
+        }
+    };
 }
 
-pub(super) static INTERPOLATION_TYPE: PyOnceLock<Py<PyType>> = PyOnceLock::new();
+mk_import!(get_generator_type, "types", "GeneratorType", PyType);
+mk_import!(get_coroutine_type, "types", "CoroutineType", PyType);
 
-pub(super) fn get_interpolation_type<'py>(py: Python<'py>) -> &'py Bound<'py, PyType> {
-    get_or_import(
-        py,
-        &INTERPOLATION_TYPE,
-        "string.templatelib",
-        "Interpolation",
-    )
-}
+mk_import!(get_template_type, "string.templatelib", "Template", PyType);
+mk_import!(
+    get_interpolation_type,
+    "string.templatelib",
+    "Interpolation",
+    PyType
+);
+
+mk_import!(get_inspect_signature, "inspect", "signature", PyFunction);
+mk_import!(get_inspect_signature_type, "inspect", "Signature", PyType);
+mk_import!(get_inspect_parameter_type, "inspect", "Parameter", PyType);
 
 fn get_or_import<'py, 'a, T: PyTypeCheck>(
     py: Python<'py>,
@@ -28,10 +41,9 @@ fn get_or_import<'py, 'a, T: PyTypeCheck>(
 }
 
 fn import<T: PyTypeCheck>(module: &str, item: &str) -> PyResult<Py<T>> {
-    let t = Python::attach(|py: Python<'_>| {
+    Python::attach(|py: Python<'_>| {
         let module = py.import(module)?;
         let attribute = module.getattr(item)?;
         Ok(attribute.cast_into::<T>()?.unbind())
-    });
-    t
+    })
 }
