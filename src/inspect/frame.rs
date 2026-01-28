@@ -1,35 +1,63 @@
 use std::ffi::c_int;
 
 use pyo3::{
-    ffi::{self, PyFrameObject, PyFrame_GetCode, PyFrame_GetLineNumber},
-    Bound, Py, Python,
+    Bound, Python,
+    ffi::{self, PyFrame_GetCode, PyFrame_GetLasti, PyFrame_GetLineNumber},
+    types::{PyCode, PyFrame},
 };
 
-use crate::inspect::Code;
+pub(crate) trait UnboundPyFrameMethodsExt {
+    fn from_thread_state(py: Python<'_>) -> Option<Bound<'_, Self>>
+    where
+        Self: Sized;
+}
 
-pub(crate) struct Frame<'a>(pub(super) Bound<'a, PyFrameObject>);
+impl UnboundPyFrameMethodsExt for PyFrame {
+    fn from_thread_state(py: Python<'_>) -> Option<Bound<'_, Self>> {
+        // returns NULL/Borrowed: https://docs.python.org/3/c-api/reflection.html#c.PyEval_GetFrame
+        unsafe {
+            Bound::from_borrowed_ptr_or_opt(py, ffi::PyEval_GetFrame() as *mut ffi::PyObject)
+                .map(|x| x.cast_into_unchecked())
+        }
+    }
+}
 
-impl<'a> Frame<'a> {
-    pub(crate) fn new(py: Python<'a>) -> Self {
-        // SAFETY: Safe.
-        let frame = unsafe { ffi::PyEval_GetFrame() };
+// frame should be !Send/!Sync actually, but that requires modifying PyO3 source
+// https://docs.python.org/3/howto/free-threading-python.html#frame-objects
+pub(crate) trait PyFrameMethodsExt<'py> {
+    fn line_number(&self) -> c_int;
 
-        // SAFETY: PyEval_GetFrame return null or borrowed reference to PyFrameObject; from_borrowed_ptr checks for null
-        let frame = unsafe { Py::from_borrowed_ptr(py, frame as *mut pyo3::ffi::PyObject) };
-        Self(frame.into_bound(py))
+    fn code(&self) -> Bound<'py, PyCode>;
+
+    fn last_ix_index(&self) -> Option<usize>;
+}
+
+impl<'py> PyFrameMethodsExt<'py> for Bound<'py, PyFrame> {
+    fn line_number(&self) -> c_int {
+        {
+            // SAFETY: self.frame is a valid frame
+            unsafe { PyFrame_GetLineNumber(self.as_ptr() as *mut ffi::PyFrameObject) }
+        }
     }
 
-    pub(crate) fn line_number(&self) -> c_int {
-        // SAFETY: self.frame is a valid frame
-        unsafe { PyFrame_GetLineNumber(self.0.as_ptr() as *mut PyFrameObject) }
+    fn code(&self) -> Bound<'py, PyCode> {
+        let code = unsafe { PyFrame_GetCode(self.as_ptr() as *mut ffi::PyFrameObject) };
+
+        // PyFrame_GetCode returns a strong reference, https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
+        unsafe {
+            Bound::from_owned_ptr(self.py(), code as *mut ffi::PyObject).cast_into_unchecked()
+        }
     }
 
-    pub(crate) fn code(&'a self) -> Code<'a> {
-        // SAFETY: self.frame is valid, result cannot be NULL: https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
-        let code = unsafe { PyFrame_GetCode(self.0.as_ptr() as *mut PyFrameObject) };
+    fn last_ix_index(&self) -> Option<usize> {
+        let code = unsafe { PyFrame_GetLasti(self.as_ptr() as *mut ffi::PyFrameObject) };
 
-        // SAFETY: code is indeed a PyCodeObject, and PyFrame_GetCode return a strong reference
-        let code = unsafe { Py::from_owned_ptr(self.0.py(), code as *mut pyo3::ffi::PyObject) };
-        Code::new(code.into_bound(self.0.py()))
+        match code {
+            -1 => None,
+            // should not panic, as it's an index, which already means it's less or equal than usize::MAX
+            // (and it could panic only on 16-bit systems, can these even run python?)
+            0.. => Some(usize::try_from(code).unwrap()),
+            _ => unreachable!(),
+        }
     }
 }
