@@ -1,6 +1,8 @@
 use std::ptr;
 
-use pyo3::{ffi, prelude::*, types::PyString, PyTypeCheck};
+use pyo3::{PyTypeCheck, ffi, prelude::*, types::PyString};
+
+use crate::ffi_ext::FfiPtrExt;
 
 // copied from pyo3 src/py_result_ext.rs
 pub(crate) trait PyResultExt<'py> {
@@ -11,21 +13,6 @@ impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
     #[inline]
     unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>> {
         self.map(|instance| unsafe { instance.cast_into_unchecked() })
-    }
-}
-
-// copied from pyo3 src/ffi_ptr_ext.rs
-pub(crate) trait FfiPtrExt {
-    /// Assumes this pointer carries a Python reference which needs to be decref'd.
-    ///
-    /// If the pointer is NULL, this function will fetch an error.
-    unsafe fn assume_owned_or_err(self, py: Python<'_>) -> PyResult<Bound<'_, PyAny>>;
-}
-
-impl FfiPtrExt for *mut ffi::PyObject {
-    #[inline]
-    unsafe fn assume_owned_or_err(self, py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
-        unsafe { Bound::from_owned_ptr_or_err(py, self) }
     }
 }
 
