@@ -31,7 +31,7 @@ mod tracing {
     use event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{FmtLayer, Format, py_init};
+    use layer::{FmtLayer, Format, init};
 
     #[pymodule_export]
     use instrument::py_instrument;
