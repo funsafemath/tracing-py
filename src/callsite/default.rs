@@ -17,7 +17,7 @@ use crate::{
 // a single address can contain multiple callsites,
 // since i can't make python code use only a single event level or constast fields
 // filename, module name and line number hopefully stay constant
-#[derive(Hash, PartialEq, Eq, Clone)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub(crate) struct CallsiteIdentifier {
     address: usize,
     level: Level,

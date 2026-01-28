@@ -11,7 +11,7 @@ use pyo3::{
     Bound, Python,
     types::{PyCode, PyFrame},
 };
-use tracing::{Level, Metadata, Value, field::ValueSet, level_filters};
+use tracing::{Level, Metadata, Value, field::ValueSet, level_filters, warn};
 use tracing_core::{Callsite, Kind, LevelFilter, callsite::DefaultCallsite};
 
 use crate::{
@@ -60,15 +60,23 @@ pub(crate) fn get_or_init_callsite(
     let inspector = Inspector::new(&frame);
 
     let identifier = CallsiteIdentifier::new(
+        // todo: ix_address can be reused if the code is dynamically compiled, probably something else should be used
         inspector.ix_address(),
         level,
         fields,
         CallsiteKind::from(kind.clone()),
     );
 
-    CALLSITES
-        .lock()
-        .unwrap()
+    let mut callsites = CALLSITES.lock().unwrap();
+
+    if callsites.len() >= 100000 {
+        warn!(
+            "there are {} callsites, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
+            callsites.len()
+        );
+    }
+
+    callsites
         .entry(identifier.clone())
         .or_insert_with(|| default::new_callsite((frame, code), identifier))
 }
