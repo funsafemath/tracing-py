@@ -29,7 +29,6 @@ impl<'a, 'py> Inspector<'a, 'py> {
     }
 
     pub(crate) fn ix_address(&self) -> usize {
-        // SAFETY: self.frame is a valid frame
         let last_instruction_offset = self
             .frame
             .last_ix_index()
