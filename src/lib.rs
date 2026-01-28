@@ -1,14 +1,12 @@
 #![feature(exact_size_is_empty)]
 
-mod any_ext;
 mod cached;
 mod callsite;
 mod event;
-mod ffi_ext;
-mod function_ext;
+mod ext;
 mod imports;
-mod inspect;
 mod instrument;
+mod introspect;
 mod layer;
 mod leak;
 mod level;

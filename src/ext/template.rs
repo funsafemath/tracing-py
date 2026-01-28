@@ -1,8 +1,8 @@
-use pyo3::{types::PyTupleMethods, Bound};
+use pyo3::{Bound, types::PyTupleMethods};
 
 use crate::template::{
     interpolation::{PyInterpolation, PyInterpolationMethods},
-    PyTemplate, PyTemplateMethods,
+    template_string::{PyTemplate, PyTemplateMethods},
 };
 
 pub(crate) trait PyTemplateMethodsExt<'py> {

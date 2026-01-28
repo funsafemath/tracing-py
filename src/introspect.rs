@@ -6,7 +6,7 @@ use pyo3::{
     types::{PyCode, PyFrame, PyString},
 };
 
-use crate::inspect::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt};
+use crate::ext::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt};
 
 unsafe extern "C" {
     pub fn PyEval_GetFrameGlobals() -> *mut ffi::PyObject;

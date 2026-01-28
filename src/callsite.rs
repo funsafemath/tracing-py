@@ -16,10 +16,8 @@ use tracing_core::{Callsite, Kind, LevelFilter, callsite::DefaultCallsite};
 
 use crate::{
     callsite::{default::CallsiteIdentifier, empty::EmptyCallsite, kind::CallsiteKind},
-    inspect::{
-        Inspector,
-        frame::{PyFrameMethodsExt, UnboundPyFrameMethodsExt},
-    },
+    ext::frame::{PyFrameMethodsExt, UnboundPyFrameMethodsExt},
+    introspect::Inspector,
 };
 
 pub(crate) enum Context<'py> {
