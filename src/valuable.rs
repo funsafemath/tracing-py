@@ -5,7 +5,8 @@ use valuable::{Valuable, Value, Visit};
 
 use crate::{
     cached::{CachedValuable, CachedValue, GetValue},
-    template::{PyTemplate, PyTemplateMethodsExt},
+    ext::template::PyTemplateMethodsExt,
+    template::template_string::PyTemplate,
 };
 
 impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {

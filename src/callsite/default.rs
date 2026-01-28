@@ -10,7 +10,8 @@ use tracing_core::{
 
 use crate::{
     callsite::{CallsiteKind, EmptyCallsite},
-    inspect::{Inspector, code::PyCodeMethodsExt, frame::PyFrameMethodsExt},
+    ext::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt},
+    introspect::Inspector,
     leak::{Leaker, leak},
 };
 
