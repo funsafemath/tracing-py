@@ -54,7 +54,7 @@ impl<'py> PyFrameMethodsExt<'py> for Bound<'py, PyFrame> {
 
         match code {
             -1 => None,
-            // should not panic, as it's an index, which already means it's less or equal than usize::MAX
+            // should not panic, as it's an index, and indices are <= usize::MAX
             0.. => Some(usize::try_from(code).unwrap()),
             _ => unreachable!(),
         }
