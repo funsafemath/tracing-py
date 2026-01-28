@@ -3,7 +3,7 @@ use pyo3::{
     types::{PyBytes, PyCode, PyString},
 };
 
-use crate::any_ext::InfallibleAttr;
+use crate::infallible_attr;
 
 pub(crate) trait PyCodeMethodsExt<'py> {
     fn filename(&self) -> Bound<'py, PyString>;
@@ -17,19 +17,19 @@ pub(crate) trait PyCodeMethodsExt<'py> {
 
 impl<'py> PyCodeMethodsExt<'py> for Bound<'py, PyCode> {
     fn filename(&self) -> Bound<'py, PyString> {
-        self.infallible_attr::<"co_filename", PyString>()
+        infallible_attr!(self, "co_filename")
     }
 
     fn qualname(&self) -> Bound<'py, PyString> {
-        self.infallible_attr::<"co_qualname", PyString>()
+        infallible_attr!(self, "co_qualname")
     }
 
     fn name(&self) -> Bound<'py, PyString> {
-        self.infallible_attr::<"co_name", PyString>()
+        infallible_attr!(self, "co_name")
     }
 
     // todo: there's a PyCode_GetCode function, which should be a bit faster
     fn bytecode(&self) -> Bound<'py, PyBytes> {
-        self.infallible_attr::<"co_code", PyBytes>()
+        infallible_attr!(self, "co_code")
     }
 }

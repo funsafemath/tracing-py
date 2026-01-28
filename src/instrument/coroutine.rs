@@ -2,8 +2,7 @@ use pyo3::{IntoPyObjectExt, prelude::*, types::PyType};
 use tracing::Span;
 
 use crate::{
-    any_ext::InfallibleAttr, imports::get_coroutine_type,
-    instrument::generator::InstrumentedGenerator,
+    imports::get_coroutine_type, infallible_attr, instrument::generator::InstrumentedGenerator,
 };
 
 #[pyclass]
@@ -34,26 +33,16 @@ impl InstrumentedCoroutine {
 
     fn send<'py>(&self, py: Python<'py>, arg: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
         let _enter = self.span.enter();
-        self.inner
-            .bind(py)
-            .infallible_attr::<"send", PyAny>()
-            .call1((arg,))
+        infallible_attr!(self.inner, "send", py).call1((arg,))
     }
 
     fn throw<'py>(&self, py: Python<'py>, arg: Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
         let _enter = self.span.enter();
-        self.inner
-            .bind(py)
-            .infallible_attr::<"throw", PyAny>()
-            .call1((arg,))
+        infallible_attr!(self.inner, "throw", py).call1((arg,))
     }
 
     fn __await__<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
-        let generator = self
-            .inner
-            .bind(py)
-            .infallible_attr::<"__await__", PyAny>()
-            .call0()?;
+        let generator = infallible_attr!(self.inner, "__await__", py).call0()?;
         Ok(
             InstrumentedGenerator::new(generator.unbind(), self.span.clone())
                 .into_py_any(py)
@@ -63,33 +52,31 @@ impl InstrumentedCoroutine {
 
     #[getter]
     fn cr_await<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner.bind(py).infallible_attr::<"cr_await", PyAny>()
+        infallible_attr!(self.inner, "cr_await", py)
     }
 
     #[getter]
     fn cr_code<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner.bind(py).infallible_attr::<"cr_code", PyAny>()
+        infallible_attr!(self.inner, "cr_code", py)
     }
 
     #[getter]
     fn cr_frame<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner.bind(py).infallible_attr::<"cr_frame", PyAny>()
+        infallible_attr!(self.inner, "cr_frame", py)
     }
 
     #[getter]
     fn cr_origin<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner.bind(py).infallible_attr::<"cr_origin", PyAny>()
+        infallible_attr!(self.inner, "cr_origin", py)
     }
 
     #[getter]
     fn cr_running<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner.bind(py).infallible_attr::<"cr_running", PyAny>()
+        infallible_attr!(self.inner, "cr_running", py)
     }
 
     #[getter]
     fn cr_suspended<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
-        self.inner
-            .bind(py)
-            .infallible_attr::<"cr_suspended", PyAny>()
+        infallible_attr!(self.inner, "cr_suspended", py)
     }
 }
