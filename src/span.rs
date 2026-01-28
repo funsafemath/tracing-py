@@ -1,0 +1,61 @@
+use pyo3::prelude::*;
+use tracing::{Level, Metadata, Span, Value, field::ValueSet};
+use tracing_core::{Kind, callsite::DefaultCallsite};
+use valuable::Valuable;
+
+use crate::{
+    callsite::{self, CallsiteAction},
+    valuable::PyCachedValuable,
+};
+
+struct SpanAction<'py> {
+    fields: &'static [&'static str],
+    values: Vec<Bound<'py, PyAny>>,
+}
+
+impl<'py> CallsiteAction for SpanAction<'py> {
+    const KIND: Kind = Kind::SPAN;
+    type ReturnType = Span;
+
+    // leaks the data for no good reason, see the comment above [crate::event::EventAction::with_fields_and_values]
+    fn with_fields_and_values(
+        self,
+        f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<Span>,
+    ) -> Option<Span> {
+        let values: Vec<_> = self
+            .values
+            .into_iter()
+            .map(PyCachedValuable::from)
+            .collect();
+        // let fields: &'static [&'static str] = VecLeaker::leak_or_get_once(fields);
+
+        // this vector seems unnecessary
+        let values = values
+            .iter()
+            .map(|x| x as &dyn Valuable)
+            .collect::<Vec<_>>();
+
+        let values = values
+            .iter()
+            .map(|x| Some(x as &dyn Value))
+            .collect::<Vec<_>>();
+
+        f(self.fields, &values)
+    }
+
+    fn do_if_enabled(metadata: &'static Metadata, values: &ValueSet) -> Self::ReturnType {
+        Span::new(metadata, values)
+    }
+}
+
+pub(crate) fn span(
+    py: Python,
+    level: Level,
+    fields: &'static [&'static str],
+    values: Vec<Bound<'_, PyAny>>,
+    callsite: &'static DefaultCallsite,
+) -> Option<Span> {
+    // todo: rn the callsite is created from the current stack frame, which is wrong
+    // i want to implement spans for async function/generators first, then i'll fix this
+    callsite::do_action(py, level, SpanAction { fields, values }, Some(callsite))
+}
