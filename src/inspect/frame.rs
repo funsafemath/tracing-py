@@ -43,7 +43,7 @@ impl<'py> PyFrameMethodsExt<'py> for Bound<'py, PyFrame> {
     fn code(&self) -> Bound<'py, PyCode> {
         let code = unsafe { PyFrame_GetCode(self.as_ptr() as *mut ffi::PyFrameObject) };
 
-        // PyFrame_GetCode return a strong reference, https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
+        // PyFrame_GetCode returns a strong reference, https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
         unsafe {
             Bound::from_owned_ptr(self.py(), code as *mut ffi::PyObject).cast_into_unchecked()
         }
@@ -52,7 +52,6 @@ impl<'py> PyFrameMethodsExt<'py> for Bound<'py, PyFrame> {
     fn last_ix_index(&self) -> Option<usize> {
         let code = unsafe { PyFrame_GetLasti(self.as_ptr() as *mut ffi::PyFrameObject) };
 
-        // PyFrame_GetCode return a strong reference, https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
         match code {
             -1 => None,
             // should not panic, as it's an index, which already means it's less or equal than usize::MAX
