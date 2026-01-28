@@ -1,6 +1,6 @@
 use tracing_core::Kind;
 
-#[derive(Hash, PartialEq, Eq, Clone)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub(super) enum CallsiteKind {
     Event,
     Span,
