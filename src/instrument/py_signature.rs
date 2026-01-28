@@ -1,6 +1,6 @@
-use pyo3::{prelude::*, types::PyMappingProxy, PyTypeInfo};
+use pyo3::{PyTypeInfo, prelude::*, types::PyMappingProxy};
 
-use crate::{any_ext::InfallibleAttr, imports::get_inspect_signature_type};
+use crate::{imports::get_inspect_signature_type, infallible_attr};
 
 #[repr(transparent)]
 pub(crate) struct PySignature(PyAny);
@@ -22,6 +22,6 @@ pub(crate) trait PySignatureMethods<'py> {
 
 impl<'py> PySignatureMethods<'py> for Bound<'py, PySignature> {
     fn parameters(&self) -> Bound<'py, PyMappingProxy> {
-        self.infallible_attr::<"parameters", PyMappingProxy>()
+        infallible_attr!(self, "parameters")
     }
 }
