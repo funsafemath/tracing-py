@@ -1,13 +1,17 @@
-use tracing::{field::FieldSet, Level, Metadata};
+use pyo3::{
+    Bound,
+    types::{PyCode, PyFrame, PyStringMethods},
+};
+use tracing::{Level, Metadata, field::FieldSet};
 use tracing_core::{
-    callsite::{DefaultCallsite, Identifier},
     Kind,
+    callsite::{DefaultCallsite, Identifier},
 };
 
 use crate::{
     callsite::{CallsiteKind, EmptyCallsite},
-    inspect::Inspector,
-    leak::{leak, Leaker},
+    inspect::{Inspector, code::PyCodeMethodsExt, frame::PyFrameMethodsExt},
+    leak::{Leaker, leak},
 };
 
 // a single address can contain multiple callsites,
@@ -38,7 +42,7 @@ impl CallsiteIdentifier {
 }
 
 pub(super) fn new_callsite(
-    inspector: Inspector,
+    (frame, code): (Bound<'_, PyFrame>, Bound<'_, PyCode>),
     CallsiteIdentifier {
         level,
         fields,
@@ -46,23 +50,29 @@ pub(super) fn new_callsite(
         ..
     }: CallsiteIdentifier,
 ) -> &'static DefaultCallsite {
-    let frame = &inspector.frame;
-    let code = &inspector.code;
-    let py = inspector.py;
-
+    // for instrument() we use invocation line number as the line number (not function line number),
+    // which is consistent with the tracing crate
     let line = u32::try_from(frame.line_number()).expect("negative line number?");
 
     let mut leaker = Leaker::acquire();
 
-    let filename = leaker.leak_or_get(code.filename().to_string_lossy(py).into_owned());
+    let filename = leaker.leak_or_get(code.filename().to_string_lossy().into_owned());
 
-    let target = code.target();
-    let target = leaker.leak_or_get(target.to_string_lossy(py).into_owned());
+    let target = code.qualname();
+    let target = leaker.leak_or_get(target.to_string_lossy().into_owned());
 
     let empty_callsite = EmptyCallsite::new();
 
+    let name = leaker.leak_or_get(match kind {
+        CallsiteKind::Event => format!("event {}", filename),
+        CallsiteKind::Span => code.name().to_string(),
+        CallsiteKind::Hint => unimplemented!(),
+    });
+
+    let inspector = Inspector::new(&frame);
+
     let meta = leak(Metadata::new(
-        leaker.leak_or_get(format!("event {}", filename)),
+        name,
         target,
         level,
         Some(leaker.leak_or_get(inspector.module())),
