@@ -4,8 +4,11 @@ mod parameter;
 mod py_signature;
 mod signature;
 
+use std::collections::HashSet;
+
 use pyo3::{
     IntoPyObjectExt,
+    exceptions::PyValueError,
     prelude::*,
     types::{PyCFunction, PyDict, PyFrame, PyFunction, PyTuple},
 };
@@ -21,14 +24,15 @@ use crate::{
         coroutine::InstrumentedCoroutine, generator::InstrumentedGenerator,
         signature::extract_signature,
     },
+    level::PyLevel,
     span::span,
 };
 
-// todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
-#[pyfunction(name = "instrument")]
-pub(crate) fn py_instrument<'py>(
+// todo: impl skip/skip all
+fn instrument<'py>(
     py: Python<'py>,
     function: Bound<'py, PyFunction>,
+    options: InstrumentOptions,
 ) -> PyResult<Bound<'py, PyAny>> {
     let signature = extract_signature(&function)?;
     let frame = PyFrame::from_thread_state(py).expect("must be called from python context");
@@ -37,7 +41,7 @@ pub(crate) fn py_instrument<'py>(
             code: function.code(),
             frame,
         },
-        Level::INFO,
+        options.level,
         signature.param_names(),
         Kind::SPAN,
     );
@@ -87,7 +91,75 @@ pub(crate) fn py_instrument<'py>(
                 Ok(res.unbind())
             }
         },
-    )
-    .unwrap()
+    )?
     .into_any())
+}
+
+#[pyclass]
+#[derive(Clone)]
+struct InstrumentOptions {
+    level: Level,
+    skip: HashSet<String>,
+    skip_all: bool,
+}
+
+impl InstrumentOptions {
+    const DEFAULT_LEVEL: Level = Level::INFO;
+}
+
+#[pymethods]
+impl InstrumentOptions {
+    fn __call__<'py>(
+        &self,
+        py: Python<'py>,
+        func: Bound<'py, PyFunction>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        instrument(py, func, self.clone())
+    }
+}
+
+impl Default for InstrumentOptions {
+    fn default() -> Self {
+        Self {
+            level: Self::DEFAULT_LEVEL,
+            skip: Default::default(),
+            skip_all: Default::default(),
+        }
+    }
+}
+
+// todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
+//
+// overhead is predominantly caused by Span::new call, so optimizing this function is not a priority
+#[pyfunction(name = "instrument")]
+#[pyo3(signature = (func = None, /, *, level = None, skip = None, skip_all = None))]
+pub(crate) fn py_instrument<'py>(
+    py: Python<'py>,
+    func: Option<Bound<'py, PyFunction>>,
+    level: Option<PyLevel>,
+    skip: Option<Vec<String>>,
+    skip_all: Option<bool>,
+) -> PyResult<Bound<'py, PyAny>> {
+    if let Some(func) = func {
+        if skip.is_some() || level.is_some() || skip_all.is_some() {
+            Err(PyValueError::new_err(
+                "instrument() does not accept keyword arguments when the positional argument is a function",
+            ))
+        } else {
+            instrument(py, func, InstrumentOptions::default())
+        }
+    } else {
+        let mut options = InstrumentOptions::default();
+        if let Some(level) = level {
+            options.level = Level::from(level);
+        }
+        if let Some(skip) = skip {
+            options.skip = skip.into_iter().collect();
+        }
+        if let Some(skip_all) = skip_all {
+            options.skip_all = skip_all;
+        }
+
+        options.into_bound_py_any(py)
+    }
 }

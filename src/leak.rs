@@ -74,7 +74,7 @@ impl<'a> VecLeaker<'a> {
             None => {
                 if self.guard.len() >= 100000 {
                     warn!(
-                        "there are {} leaked field combinations, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
+                        "there are {} leaked field combinations, are you sure you're doing the right thing? using tracing in dynamically compiled code or calling instrument() with different field combinations leaks memory",
                         self.guard.len()
                     );
                 }
