@@ -1,6 +1,7 @@
 mod display;
 mod valuable;
 
+pub use display::CachedDisplay;
 pub use valuable::CachedValuable;
 
 use std::{cell::OnceCell, marker::PhantomData};
