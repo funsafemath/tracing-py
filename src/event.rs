@@ -133,7 +133,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
             // though it's probably possible to cached the value only if there's more than 1 active layer,
             // that's more efficient
 
-            // on second look, it looks like that subscribers never call fmt repeatedly?
+            // on a second look, it looks like that subscribers never call fmt repeatedly?
             let message: CachedValue<_, _, CachedDisplay> =
                 CachedValue::from(PyCachedValuable::from(message));
             let args = format_args!("{message}");

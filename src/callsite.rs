@@ -110,6 +110,7 @@ pub(crate) fn do_action<A: CallsiteAction>(
                 None => get_or_init_callsite(Context::FromThreadState(py), level, fields, A::KIND),
             };
 
+            // todo: don't check again if it was already checked
             if is_callsite_enabled(callsite) {
                 Some(A::do_if_enabled(
                     callsite.metadata(),
