@@ -1,20 +1,8 @@
 use std::ptr;
 
-use pyo3::{PyTypeCheck, ffi, prelude::*, types::PyString};
+use pyo3::{ffi, prelude::*, types::PyString};
 
 use crate::ffi_ext::FfiPtrExt;
-
-// copied from pyo3 src/py_result_ext.rs
-pub(crate) trait PyResultExt<'py> {
-    unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>>;
-}
-
-impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
-    #[inline]
-    unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>> {
-        self.map(|instance| unsafe { instance.cast_into_unchecked() })
-    }
-}
 
 #[macro_export]
 macro_rules! infallible_attr {
@@ -30,6 +18,18 @@ macro_rules! infallible_attr {
             .cast_into()
             .unwrap()
     };
+}
+
+// copied from pyo3 src/py_result_ext.rs
+pub(crate) trait PyResultExt<'py> {
+    unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>>;
+}
+
+impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
+    #[inline]
+    unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>> {
+        self.map(|instance| unsafe { instance.cast_into_unchecked() })
+    }
 }
 
 pub(super) trait PyAnyMethodsExt<'py> {
