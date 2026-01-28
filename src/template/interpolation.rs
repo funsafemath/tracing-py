@@ -1,6 +1,6 @@
 use pyo3::{PyTypeInfo, prelude::*, types::PyString};
 
-use crate::{any_ext::PyAnyMethodsExt, imports::get_interpolation_type, infallible_attr};
+use crate::{ext::any::PyAnyMethodsExt, imports::get_interpolation_type, infallible_attr};
 
 #[repr(transparent)]
 pub(crate) struct PyInterpolation(PyAny);

@@ -17,9 +17,8 @@ use tracing_core::Kind;
 
 use crate::{
     callsite::{self, Context},
-    function_ext::PyFunctionMethodsExt,
+    ext::{frame::UnboundPyFrameMethodsExt, function::PyFunctionMethodsExt},
     imports::{get_coroutine_type, get_generator_type},
-    inspect::frame::UnboundPyFrameMethodsExt,
     instrument::{
         coroutine::InstrumentedCoroutine, generator::InstrumentedGenerator,
         signature::extract_signature,

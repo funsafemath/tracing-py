@@ -4,7 +4,7 @@ pub(crate) use fmt::{FmtLayer, Format, PyFmtSpan};
 
 use pyo3::{Bound, PyAny, PyResult, exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods};
 use tracing_subscriber::{
-    Layer, Registry, fmt::format::FmtSpan, layer::SubscriberExt, registry, util::SubscriberInitExt,
+    Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
 };
 
 // todo: accept *args instead of a Sequence

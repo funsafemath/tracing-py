@@ -2,7 +2,7 @@ use std::ptr;
 
 use pyo3::{ffi, prelude::*, types::PyString};
 
-use crate::ffi_ext::FfiPtrExt;
+use crate::ext::ffi::FfiPtrExt;
 
 #[macro_export]
 macro_rules! infallible_attr {
@@ -32,7 +32,7 @@ impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
     }
 }
 
-pub(super) trait PyAnyMethodsExt<'py> {
+pub(crate) trait PyAnyMethodsExt<'py> {
     fn ascii(&self) -> PyResult<Bound<'py, PyString>>;
 
     fn format(&self, format_spec: Option<Bound<'py, PyString>>) -> PyResult<Bound<'py, PyString>>;
