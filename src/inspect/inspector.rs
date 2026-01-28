@@ -1,44 +1,40 @@
-use std::{ffi::c_int, path::Path};
+use std::path::Path;
 
 use pyo3::{
-    ffi::{self, PyFrameObject},
+    ffi::{self},
     prelude::*,
-    types::PyString,
+    types::{PyCode, PyFrame, PyString},
 };
 
-use crate::inspect::{code::Code, Frame};
+use crate::inspect::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt};
 
 unsafe extern "C" {
-    // https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetLasti
-    // added in 3.11, this crate targets 3.14+
-    pub fn PyFrame_GetLasti(f: *mut PyFrameObject) -> c_int;
-
     pub fn PyEval_GetFrameGlobals() -> *mut ffi::PyObject;
 }
 
 #[non_exhaustive]
-pub(crate) struct Inspector<'a> {
-    pub(crate) frame: &'a Frame<'a>,
-    pub(crate) code: Code<'a>,
-    pub(crate) py: Python<'a>,
+pub(crate) struct Inspector<'a, 'py> {
+    pub(crate) frame: &'a Bound<'py, PyFrame>,
+    pub(crate) code: Bound<'py, PyCode>,
+    pub(crate) py: Python<'py>,
 }
 
-impl<'a> Inspector<'a> {
-    pub(crate) fn new(frame: &'a Frame) -> Self {
+impl<'a, 'py> Inspector<'a, 'py> {
+    pub(crate) fn new(frame: &'a Bound<'py, PyFrame>) -> Self {
         Self {
-            frame,
             code: frame.code(),
-            py: frame.0.py(),
+            py: frame.py(),
+            frame,
         }
     }
 
     pub(crate) fn ix_address(&self) -> usize {
         // SAFETY: self.frame is a valid frame
-        let last_instruction_offset = usize::try_from(unsafe {
-            PyFrame_GetLasti(self.frame.0.as_ptr() as *mut PyFrameObject)
-        })
-        .expect("16-bit computers are not supported, sorry");
-        self.code.bytecode_addr() + last_instruction_offset
+        let last_instruction_offset = self
+            .frame
+            .last_ix_index()
+            .expect("frame has no instruction index, is the function called from python context?");
+        self.code.bytecode().as_ptr() as usize + last_instruction_offset
     }
 
     // ugly, but for some reason other attributes/functions for introspection didn't work
@@ -69,7 +65,7 @@ impl<'a> Inspector<'a> {
         } + 1;
 
         let file = self.code.filename();
-        let file = file.to_string_lossy(self.py).into_owned();
+        let file = file.to_string_lossy().into_owned();
         let path = Path::new(&file).to_owned();
 
         // todo: this is a horrible idea, it should be modules[modules[__name__].__package__]...-based lookup at least
