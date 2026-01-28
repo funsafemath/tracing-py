@@ -24,7 +24,7 @@ use crate::{
     span::span,
 };
 
-// todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt too slow)
+// todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
 #[pyfunction(name = "instrument")]
 pub(crate) fn py_instrument<'py>(
     py: Python<'py>,
