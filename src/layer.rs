@@ -1,16 +1,16 @@
 mod fmt;
 
-pub(crate) use fmt::{FmtLayer, Format};
+pub(crate) use fmt::{FmtLayer, Format, PyFmtSpan};
 
-use pyo3::{exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods, Bound, PyAny, PyResult};
+use pyo3::{Bound, PyAny, PyResult, exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods};
 use tracing_subscriber::{
-    layer::SubscriberExt, registry, util::SubscriberInitExt, Layer, Registry,
+    Layer, Registry, fmt::format::FmtSpan, layer::SubscriberExt, registry, util::SubscriberInitExt,
 };
 
 // todo: accept *args instead of a Sequence
-#[pyfunction]
+#[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
-pub(crate) fn init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
+pub(crate) fn py_init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
     let layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = match layers {
         Some(layers) => {
             if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
@@ -23,7 +23,17 @@ pub(crate) fn init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
                 vec![(&*layer.borrow()).into()]
             }
         }
-        None => vec![Box::new(tracing_subscriber::fmt::layer())],
+        None => vec![Box::new(
+            // TODO: add span_events to options, rn it's here only for development, i hope i won't accidentally commit it
+            tracing_subscriber::fmt::layer()
+                .with_line_number(true)
+                .with_file(true)
+                .with_target(true)
+                .with_ansi(true)
+                .with_span_events(FmtSpan::FULL)
+                .with_level(true), // .with_filter(LevelFilter::from_level(Level::TRACE)), // .with_thread_ids(true)
+                                   // .with_thread_names(true), // .with_span_events(FmtSpan::FULL),
+        )],
     };
 
     registry()
