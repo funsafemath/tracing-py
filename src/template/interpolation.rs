@@ -1,9 +1,6 @@
-use pyo3::{prelude::*, types::PyString, PyTypeInfo};
+use pyo3::{PyTypeInfo, prelude::*, types::PyString};
 
-use crate::{
-    any_ext::{InfallibleAttr, PyAnyMethodsExt},
-    imports::get_interpolation_type,
-};
+use crate::{any_ext::PyAnyMethodsExt, imports::get_interpolation_type, infallible_attr};
 
 #[repr(transparent)]
 pub(crate) struct PyInterpolation(PyAny);
@@ -45,15 +42,15 @@ pub(crate) trait PyInterpolationMethods<'py> {
 
 impl<'py> PyInterpolationMethods<'py> for Bound<'py, PyInterpolation> {
     fn value(&self) -> Bound<'py, PyAny> {
-        self.infallible_attr::<"value", PyAny>()
+        infallible_attr!(self, "value")
     }
 
     fn expression(&self) -> Bound<'py, PyString> {
-        self.infallible_attr::<"expression", PyString>()
+        infallible_attr!(self, "expression")
     }
 
     fn conversion(&self) -> Conversion {
-        let conversion_string = self.infallible_attr::<"conversion", PyString>();
+        let conversion_string: Bound<'_, PyString> = infallible_attr!(self, "conversion");
         match conversion_string.to_string().as_str() {
             "s" => Conversion::Str,
             "r" => Conversion::Repr,
@@ -64,6 +61,6 @@ impl<'py> PyInterpolationMethods<'py> for Bound<'py, PyInterpolation> {
     }
 
     fn format_spec(&self) -> Bound<'py, PyString> {
-        self.infallible_attr::<"format_spec", PyString>()
+        infallible_attr!(self, "format_spec")
     }
 }

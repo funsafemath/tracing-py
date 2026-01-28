@@ -16,15 +16,20 @@ impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
     }
 }
 
-pub(super) trait InfallibleAttr<'py> {
-    fn infallible_attr<const ATTR: &'static str, R: PyTypeCheck>(&self) -> Bound<'py, R>;
-}
-
-impl<'py, T> InfallibleAttr<'py> for Bound<'py, T> {
-    // todo: use pyo3 intern! macro
-    fn infallible_attr<const ATTR: &'static str, R: PyTypeCheck>(&self) -> Bound<'py, R> {
-        self.as_any().getattr(ATTR).unwrap().cast_into().unwrap()
-    }
+#[macro_export]
+macro_rules! infallible_attr {
+    ($obj:expr, $attr:expr) => {
+        ::pyo3::prelude::PyAnyMethods::getattr($obj.as_any(), ::pyo3::intern!($obj.py(), $attr))
+            .unwrap()
+            .cast_into()
+            .unwrap()
+    };
+    ($obj:expr, $attr:expr, $py:expr) => {
+        ::pyo3::prelude::PyAnyMethods::getattr($obj.bind($py).as_any(), ::pyo3::intern!($py, $attr))
+            .unwrap()
+            .cast_into()
+            .unwrap()
+    };
 }
 
 pub(super) trait PyAnyMethodsExt<'py> {
