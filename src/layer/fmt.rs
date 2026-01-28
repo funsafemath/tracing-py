@@ -1,5 +1,10 @@
-use pyo3::{pyclass, pymethods, Bound, Py, Python};
-use tracing_subscriber::{fmt, Layer, Registry};
+use std::fmt::Debug;
+
+use pyo3::{Bound, Py, Python, pyclass, pymethods};
+use tracing_subscriber::{
+    Layer, Registry,
+    fmt::{self, format::FmtSpan},
+};
 
 #[pyclass]
 #[derive(Clone)]
@@ -21,6 +26,7 @@ pub(crate) struct FmtLayer {
     with_thread_ids: Option<bool>,
     with_max_level: Option<crate::level::PyLevel>,
     without_time: bool,
+    fmt_span: FmtSpan,
     format: Format,
 }
 
@@ -33,6 +39,7 @@ impl FmtLayer {
     #[new]
     #[pyo3(signature = (*, log_internal_errors = None, with_ansi = None, with_file = None, with_level = None,
     with_line_number = None, with_target = None, with_thread_ids = None, with_max_level = None, without_time = false,
+                fmt_span=Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
 format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
     fn new(
         py: Python,
@@ -45,6 +52,7 @@ format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
         with_thread_ids: Option<bool>,
         with_max_level: Option<Bound<'_, crate::level::PyLevel>>,
         without_time: bool,
+        fmt_span: Py<PyFmtSpan>,
         format: Py<Format>,
     ) -> Self {
         Self {
@@ -55,9 +63,10 @@ format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level: with_max_level.map(|x| x.borrow().clone()),
+            with_max_level: with_max_level.map(|x| *x.borrow()),
             without_time,
-            format: format.bind_borrowed(py).borrow().clone(),
+            fmt_span: fmt_span.borrow(py).0.clone(),
+            format: format.borrow(py).clone(),
         }
     }
 }
@@ -75,13 +84,12 @@ impl From<&FmtLayer> for Box<dyn Layer<Registry> + Send + Sync> {
             // todo impl
             with_max_level,
             without_time,
+            fmt_span,
             format,
         } = value;
 
-        // chaining methods would be more elegant, it requires guessing the default values
-        // let layer = tracing_subscriber::fmt::Layer::new();
+        // chaining methods would be more elegant, but it requires guessing the default values
         let mut layer: fmt::Layer<Registry> = fmt::layer();
-        // let mut layer = &;
 
         if let Some(log_internal_errors) = log_internal_errors {
             layer = layer.log_internal_errors(*log_internal_errors);
@@ -111,7 +119,9 @@ impl From<&FmtLayer> for Box<dyn Layer<Registry> + Send + Sync> {
             layer = layer.with_thread_ids(*with_thread_ids);
         }
 
-        // incredibly ugly, but i didn't find a simple way to do this use to generic parameters
+        layer = layer.with_span_events(fmt_span.clone());
+
+        // incredibly ugly, but i didn't find a simple way to do this due to generic parameters
         // i'll think about it later
         match (format, without_time) {
             (Format::Full, true) => Box::new(layer.without_time()),
@@ -123,5 +133,50 @@ impl From<&FmtLayer> for Box<dyn Layer<Registry> + Send + Sync> {
             (Format::Json, true) => Box::new(layer.json().without_time()),
             (Format::Json, false) => Box::new(layer.json()),
         }
+    }
+}
+
+#[pyclass(name = "FmtSpan")]
+pub(crate) struct PyFmtSpan(FmtSpan);
+
+#[pymethods]
+impl PyFmtSpan {
+    #[classattr]
+    const NEW: Self = Self(FmtSpan::NEW);
+
+    #[classattr]
+    const ENTER: Self = Self(FmtSpan::ENTER);
+
+    #[classattr]
+    const EXIT: Self = Self(FmtSpan::EXIT);
+
+    #[classattr]
+    const CLOSE: Self = Self(FmtSpan::CLOSE);
+
+    #[classattr]
+    const NONE: Self = Self(FmtSpan::NONE);
+
+    #[classattr]
+    const ACTIVE: Self = Self(FmtSpan::ACTIVE);
+
+    #[classattr]
+    const FULL: Self = Self(FmtSpan::FULL);
+
+    fn __or__<'py>(&self, other: Bound<'py, Self>) -> Self {
+        Self(self.0.clone() & other.borrow().0.clone())
+    }
+
+    fn __and__<'py>(&self, other: Bound<'py, Self>) -> Self {
+        Self(self.0.clone() & other.borrow().0.clone())
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{self:?}")
+    }
+}
+
+impl Debug for PyFmtSpan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
