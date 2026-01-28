@@ -9,7 +9,6 @@ name = "tracing"
 crate-type = ["cdylib"]
 
 [dependencies]
-ahash = "0.8.12"
 eyre = "0.6.12"
 pyo3 = { version = "0.27.2", features = ["eyre"] }
 tracing = { version = "0.1.44", features = ["valuable"] }
