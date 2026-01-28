@@ -3,6 +3,9 @@ use std::{
     sync::{LazyLock, Mutex, MutexGuard},
 };
 
+use tracing::warn;
+
+// todo: use rwlock to improve free-threaded performance
 static LEAKED_STRINGS: LazyLock<Mutex<HashSet<&'static str>>> = LazyLock::new(Mutex::default);
 static LEAKED_SLICES: LazyLock<Mutex<HashSet<&'static [&'static str]>>> =
     LazyLock::new(Mutex::default);
@@ -31,6 +34,13 @@ impl<'a> Leaker<'a> {
         match self.guard.get(str.as_str()) {
             Some(leaked) => leaked,
             None => {
+                if self.guard.len() >= 100000 {
+                    warn!(
+                        "there are {} leaked strings, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
+                        self.guard.len()
+                    );
+                }
+
                 let leaked = Self::leak_string(str);
                 self.guard.insert(leaked);
                 leaked
@@ -62,6 +72,13 @@ impl<'a> VecLeaker<'a> {
         match self.guard.get(item.as_slice()) {
             Some(leaked) => leaked,
             None => {
+                if self.guard.len() >= 100000 {
+                    warn!(
+                        "there are {} leaked field combinations, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
+                        self.guard.len()
+                    );
+                }
+
                 let leaked = Self::leak_vec(item);
                 self.guard.insert(leaked);
                 leaked
