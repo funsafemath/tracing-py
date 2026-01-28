@@ -1,13 +1,13 @@
-use tracing::{field::FieldSet, Level, Metadata};
+use tracing::{Level, Metadata, field::FieldSet};
 use tracing_core::{
-    callsite::{DefaultCallsite, Identifier},
     Kind,
+    callsite::{DefaultCallsite, Identifier},
 };
 
 use crate::{
     callsite::{CallsiteKind, EmptyCallsite},
     inspect::Inspector,
-    leak::{leak, Leaker},
+    leak::{Leaker, leak},
 };
 
 // a single address can contain multiple callsites,
@@ -61,8 +61,14 @@ pub(super) fn new_callsite(
 
     let empty_callsite = EmptyCallsite::new();
 
+    let name = leaker.leak_or_get(match kind {
+        CallsiteKind::Event => format!("event {}", filename),
+        CallsiteKind::Span => code.name().to_string(),
+        CallsiteKind::Hint => unimplemented!(),
+    });
+
     let meta = leak(Metadata::new(
-        leaker.leak_or_get(format!("event {}", filename)),
+        name,
         target,
         level,
         Some(leaker.leak_or_get(inspector.module())),

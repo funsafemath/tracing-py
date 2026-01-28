@@ -1,8 +1,10 @@
 use pyo3::{
+    Bound, Py,
     ffi::{self, PyBytesObject, PyCodeObject},
     types::{PyAnyMethods, PyString},
-    Bound, Py,
 };
+
+use crate::any_ext::InfallibleAttr;
 
 unsafe extern "C" {
     // https://docs.python.org/3/c-api/code.html#c.PyCode_GetCode
@@ -14,40 +16,33 @@ unsafe extern "C" {
     pub fn PyCode_GetCode(f: *mut PyCodeObject) -> *mut ffi::PyObject;
 }
 
+// todo: impl it as a transparent-repr struct with PyTypeInfo
 pub(crate) struct Code<'a>(pub(super) Bound<'a, PyCodeObject>);
 
-impl<'a> Code<'a> {
-    pub(super) fn new(code: Bound<'a, PyCodeObject>) -> Self {
+impl<'py> Code<'py> {
+    pub(super) fn new(code: Bound<'py, PyCodeObject>) -> Self {
         Self(code)
     }
 
     pub(crate) fn filename(&self) -> Py<PyString> {
-        // Neither PyO3 not Python C API provide a function to get co_filename from a struct directly
-
-        // PyObject_GetAttrString is probably faster, but it's unsafe, and I didn't find a function that gets an attr by string
-        // idk maybe it already uses it
-        let name = self
-            .0
+        self.0
             .as_any()
-            .getattr("co_filename")
-            .expect("code object must have \"co_filename\" property");
-
-        name.extract()
-            .expect("\"co_filename\" of a code object must be a string")
+            .infallible_attr::<"co_filename", PyString>()
+            .unbind()
     }
 
     pub(crate) fn target(&self) -> Py<PyString> {
-        let name = self
-            .0
+        self.0
             .as_any()
-            .getattr("co_qualname")
-            .expect("code object must have \"co_qualname\" property");
-
-        name.extract()
-            .expect("\"co_qualname\" of a code object must be a string")
+            .infallible_attr::<"co_qualname", PyString>()
+            .unbind()
     }
 
-    pub(super) fn bytecode_addr(&'a self) -> usize {
+    pub(crate) fn name(&self) -> Bound<'py, PyString> {
+        self.0.as_any().infallible_attr::<"co_name", PyString>()
+    }
+
+    pub(super) fn bytecode_addr(&'py self) -> usize {
         // SAFETY: self.code is a valid & bound PyCodeObject
         let addr = unsafe { PyCode_GetCode(self.0.as_ptr().cast::<PyCodeObject>()) };
 

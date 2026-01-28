@@ -8,7 +8,7 @@ use std::{
 };
 
 use pyo3::Python;
-use tracing::{Level, Value, level_filters};
+use tracing::{Level, Metadata, Value, field::ValueSet, level_filters};
 use tracing_core::{Callsite, Kind, LevelFilter, callsite::DefaultCallsite};
 
 use crate::{
@@ -41,11 +41,10 @@ pub(crate) fn get_or_init_callsite(
         .lock()
         .unwrap()
         .entry(identifier.clone())
-        // TODO: add fields
         .or_insert_with(|| default::new_callsite(inspector, identifier))
 }
-
 pub(crate) trait CallsiteAction {
+    const KIND: Kind;
     type ReturnType;
 
     fn with_fields_and_values(
@@ -53,23 +52,19 @@ pub(crate) trait CallsiteAction {
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<Self::ReturnType>,
     ) -> Option<Self::ReturnType>;
 
-    fn do_if_enabled(
-        callsite: &'static impl Callsite,
-        values: &[Option<&dyn Value>],
-    ) -> Self::ReturnType;
+    fn do_if_enabled(metadata: &'static Metadata, values: &ValueSet) -> Self::ReturnType;
 }
 
 pub(crate) fn do_action<A: CallsiteAction>(
     py: Python,
     level: Level,
-    kind: Kind,
     action: A,
 ) -> Option<A::ReturnType> {
     if level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() {
         action.with_fields_and_values(|fields, values| {
             // todo: maybe remove the fields from the callsite id,
             // so filtering by callsite can be done before extracting the fields
-            let callsite = get_or_init_callsite(py, level, fields, kind);
+            let callsite = get_or_init_callsite(py, level, fields, A::KIND);
 
             let enabled = {
                 let interest = callsite.interest();
@@ -79,7 +74,10 @@ pub(crate) fn do_action<A: CallsiteAction>(
             };
 
             if enabled {
-                Some(A::do_if_enabled(callsite, values))
+                Some(A::do_if_enabled(
+                    callsite.metadata(),
+                    &callsite.metadata().fields().value_set_all(values),
+                ))
             } else {
                 None
             }
