@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 
 #[pyclass(name = "Level")]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(super) struct PyLevel(tracing::Level);
 
 #[pymethods]

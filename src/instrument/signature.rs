@@ -17,8 +17,9 @@ use crate::{
 };
 
 // todo: it is broken if the kwarg names are invalid unicode;
-// make the code always return the error on invalid unicode instead of silently doing potentially incorrect things
+// code should always return the error on invalid unicode instead of silently doing potentially incorrect things
 // afaik json subscriber will emit a field twice, fmt will subscriber print it twice
+// also looks like to_str -> Result<...> method doesn't solve this, it returns a lossy str even on invalid unicode
 #[derive(Debug)]
 pub(crate) struct Signature {
     param_names: &'static [&'static str],

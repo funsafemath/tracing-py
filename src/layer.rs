@@ -1,16 +1,16 @@
 mod fmt;
 
-pub(crate) use fmt::{FmtLayer, Format};
+pub(crate) use fmt::{FmtLayer, Format, PyFmtSpan};
 
-use pyo3::{exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods, Bound, PyAny, PyResult};
+use pyo3::{Bound, PyAny, PyResult, exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods};
 use tracing_subscriber::{
-    layer::SubscriberExt, registry, util::SubscriberInitExt, Layer, Registry,
+    Layer, Registry, fmt::format::FmtSpan, layer::SubscriberExt, registry, util::SubscriberInitExt,
 };
 
 // todo: accept *args instead of a Sequence
-#[pyfunction]
+#[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
-pub(crate) fn init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
+pub(crate) fn py_init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
     let layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = match layers {
         Some(layers) => {
             if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
