@@ -1,5 +1,3 @@
-#![feature(adt_const_params)]
-#![feature(unsized_const_params)]
 #![feature(exact_size_is_empty)]
 
 mod any_ext;
