@@ -1,6 +1,6 @@
 use pyo3::{
     Bound, PyAny, Python, pyfunction,
-    types::{PyDict, PyDictMethods},
+    types::{PyDict, PyDictMethods, PyString},
 };
 use tracing::{Event, Level, Metadata, Value, field::ValueSet};
 use tracing_core::Kind;
@@ -61,6 +61,14 @@ pub(super) fn py_trace(
     kwargs: Option<&Bound<'_, PyDict>>,
 ) {
     event(py, Level::TRACE, message, kwargs);
+}
+
+enum Message<'py> {
+    Any(Bound<'py, PyAny>),
+    LegacyFormatting {
+        message: Bound<'py, PyString>,
+        args: Bound<'py, PyAny>,
+    },
 }
 
 fn event(
