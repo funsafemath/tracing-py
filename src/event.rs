@@ -30,11 +30,11 @@ macro_rules! py_event {
     };
 }
 
-py_event!(py_error, "error", Level::ERROR);
-py_event!(py_warn, "warn", Level::WARN);
-py_event!(py_info, "info", Level::INFO);
-py_event!(py_debug, "debug", Level::DEBUG);
 py_event!(py_trace, "trace", Level::TRACE);
+py_event!(py_debug, "debug", Level::DEBUG);
+py_event!(py_info, "info", Level::INFO);
+py_event!(py_warn, "warn", Level::WARN);
+py_event!(py_error, "error", Level::ERROR);
 
 fn event(
     py: Python,
