@@ -1,6 +1,10 @@
+use std::fmt::Display;
+
 use pyo3::{
-    Bound, PyAny, Python, pyfunction,
-    types::{PyDict, PyDictMethods},
+    Bound, PyAny, PyResult, Python,
+    exceptions::PyTypeError,
+    pyfunction,
+    types::{PyAnyMethods, PyDict, PyDictMethods, PyString, PyTuple},
 };
 use tracing::{Event, Level, Metadata, Value, field::ValueSet};
 use tracing_core::Kind;
@@ -9,71 +13,61 @@ use valuable::Valuable;
 use crate::{
     cached::{CachedDisplay, CachedValue},
     callsite::{self, CallsiteAction},
+    formatting::{percent::PercentFormatted, valuable::PyCachedValuable},
     leak::{Leaker, VecLeaker},
-    valuable::PyCachedValuable,
 };
 
-#[pyfunction(name = "error")]
-#[pyo3(signature = (message = None, **kwargs))]
-pub(super) fn py_error(
-    py: Python<'_>,
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-) {
-    event(py, Level::ERROR, message, kwargs);
+macro_rules! py_event {
+    ($fn_name:ident, $py_name:literal, $lvl:expr) => {
+        #[pyfunction(name = $py_name)]
+        #[pyo3(signature = (message = None, fmt_args = None, **kwargs))]
+        pub(super) fn $fn_name(
+            py: Python<'_>,
+            message: Option<Bound<'_, PyAny>>,
+            fmt_args: Option<Bound<'_, PyTuple>>,
+            kwargs: Option<&Bound<'_, PyDict>>,
+        ) -> PyResult<()> {
+            event(py, $lvl, message, fmt_args, kwargs)
+        }
+    };
 }
 
-#[pyfunction(name = "warn")]
-#[pyo3(signature = (message = None, **kwargs))]
-pub(super) fn py_warn(
-    py: Python<'_>,
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-) {
-    event(py, Level::WARN, message, kwargs);
-}
-
-#[pyfunction(name = "info")]
-#[pyo3(signature = (message = None, **kwargs))]
-pub(super) fn py_info(
-    py: Python<'_>,
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-) {
-    event(py, Level::INFO, message, kwargs);
-}
-
-#[pyfunction(name = "debug")]
-#[pyo3(signature = (message = None, **kwargs))]
-pub(super) fn py_debug(
-    py: Python<'_>,
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-) {
-    event(py, Level::DEBUG, message, kwargs);
-}
-
-#[pyfunction(name = "trace")]
-#[pyo3(signature = (message = None, **kwargs))]
-pub(super) fn py_trace(
-    py: Python<'_>,
-    message: Option<Bound<'_, PyAny>>,
-    kwargs: Option<&Bound<'_, PyDict>>,
-) {
-    event(py, Level::TRACE, message, kwargs);
-}
+py_event!(py_error, "error", Level::ERROR);
+py_event!(py_warn, "warn", Level::WARN);
+py_event!(py_info, "info", Level::INFO);
+py_event!(py_debug, "debug", Level::ERROR);
+py_event!(py_trace, "trace", Level::TRACE);
 
 fn event(
     py: Python,
     level: Level,
     message: Option<Bound<'_, PyAny>>,
+    fmt_args: Option<Bound<'_, PyTuple>>,
     kwargs: Option<&Bound<'_, PyDict>>,
-) {
+) -> PyResult<()> {
+    let message = match fmt_args {
+        Some(fmt_args) => {
+            let Some(message) = message else {
+                // not using positional-only arguments to forbid passing "message" kwarg accidentally
+                return Err(PyTypeError::new_err(
+                    "a message string must be passed when using fmt_args",
+                ));
+            };
+            Message::PercentFormatted(PercentFormatted::new(message.cast_into()?, fmt_args))
+        }
+        None => Message::Any(message),
+    };
     callsite::do_action(py, level, EventAction { message, kwargs }, None);
+    Ok(())
+}
+
+enum Message<'py> {
+    Any(Option<Bound<'py, PyAny>>),
+    PercentFormatted(PercentFormatted<'py>),
 }
 
 struct EventAction<'a, 'py> {
-    message: Option<Bound<'py, PyAny>>,
+    message: Message<'py>,
     kwargs: Option<&'a Bound<'py, PyDict>>,
 }
 
@@ -111,7 +105,12 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         let (mut fields, values) = leak_or_get_kwargs(None, self.kwargs);
 
         // todo: do not use insert
-        fields.insert(0, "message");
+        match self.message {
+            Message::Any(Some(_)) | Message::PercentFormatted(_) => {
+                fields.insert(0, "message");
+            }
+            Message::Any(None) => {}
+        }
 
         let fields: &'static [&'static str] = VecLeaker::leak_or_get_once(fields);
 
@@ -126,22 +125,33 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
             .map(|x| Some(x as &dyn Value))
             .collect::<Vec<_>>();
 
-        if let Some(message) = self.message {
-            // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
-            // todo: use valuable if message is a list/dict/bool/int/float/null
-            // also should I cache the Display? not sure if the performance boost has more impact than the memory allocation overhead
-            // though it's probably possible to cached the value only if there's more than 1 active layer,
-            // that's more efficient
+        match self.message {
+            Message::Any(bound) => match bound {
+                Some(message) => {
+                    // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
+                    // todo: use valuable if message is a list/dict/bool/int/float/null
+                    // also should I cache the Display? not sure if the performance boost has more impact than the memory allocation overhead
+                    // though it's probably possible to cached the value only if there's more than 1 active layer,
+                    // that's more efficient
 
-            // on a second look, it looks like that subscribers never call fmt repeatedly?
-            let message: CachedValue<_, _, CachedDisplay> =
-                CachedValue::from(PyCachedValuable::from(message));
-            let args = format_args!("{message}");
-            // todo: do not use insert
-            values.insert(0, Some(&args as &dyn Value));
-            f(fields, &values)
-        } else {
-            f(fields, &values)
+                    // on a second look, it looks like that subscribers never call fmt repeatedly?
+                    let message: CachedValue<_, _, CachedDisplay> =
+                        CachedValue::from(PyCachedValuable::from(message));
+                    let args = format_args!("{message}");
+                    // todo: do not use insert
+                    values.insert(0, Some(&args as &dyn Value));
+                    f(fields, &values)
+                }
+                None => f(fields, &values),
+            },
+            Message::PercentFormatted(percent_formatted) => {
+                let message: CachedValue<_, _, CachedDisplay> =
+                    CachedValue::from(percent_formatted);
+                let args = format_args!("{message}");
+                // todo: do not use insert
+                values.insert(0, Some(&args as &dyn Value));
+                f(fields, &values)
+            }
         }
     }
 

@@ -4,7 +4,7 @@ pub(crate) use fmt::{FmtLayer, Format, PyFmtSpan};
 
 use pyo3::{Bound, PyAny, PyResult, exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods};
 use tracing_subscriber::{
-    Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
+    FmtSubscriber, Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
 };
 
 // todo: accept *args instead of a Sequence
@@ -23,7 +23,9 @@ pub(crate) fn py_init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
                 vec![(&*layer.borrow()).into()]
             }
         }
-        None => vec![Box::new(tracing_subscriber::fmt::layer())],
+        None => vec![Box::new(
+            tracing_subscriber::fmt::layer().with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL),
+        )],
     };
 
     registry()
