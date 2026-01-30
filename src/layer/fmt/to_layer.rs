@@ -216,9 +216,13 @@ where
                 LogFile::Path(path) => {
                     let file = opts.open(path)?;
                     let (writer, guard) = builder.finish(file);
-                    let layer = layer.with_writer(writer);
                     (
-                        set_without_time_and_rest(layer, level, format, without_time),
+                        set_without_time_and_rest(
+                            layer.with_writer(writer),
+                            level,
+                            format,
+                            without_time,
+                        ),
                         guard,
                     )
                 }
