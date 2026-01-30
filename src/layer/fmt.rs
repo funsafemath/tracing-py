@@ -3,6 +3,7 @@ pub(crate) mod to_layer;
 
 
 use pyo3::{FromPyObject, Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
+use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
@@ -16,7 +17,7 @@ pub(crate) struct FmtLayer {
     with_line_number: Option<bool>,
     with_target: Option<bool>,
     with_thread_ids: Option<bool>,
-    with_max_level: crate::level::PyLevel,
+    with_max_level: Level,
     without_time: bool,
     fmt_span: FmtSpan,
     format: Format,
@@ -39,10 +40,10 @@ impl FmtLayer {
            with_line_number = None,
            with_target = None,
            with_thread_ids = None, 
-           with_max_level = Python::attach(|x| {Py::new(x, PyLevel::INFO)}).unwrap(), 
+           with_max_level = PyLevel::Info, 
            without_time = false,
            fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
-           format = Python::attach(|x| {Py::new(x, Format::Full)}).unwrap(), 
+           format = Format::Full, 
            // tracing uses stdout by default, not sure why
            // https://github.com/tokio-rs/tracing/issues/2492
            file = LogFile::Stdout,
@@ -56,10 +57,10 @@ impl FmtLayer {
         with_line_number: Option<bool>,
         with_target: Option<bool>,
         with_thread_ids: Option<bool>,
-        with_max_level: Py<crate::level::PyLevel>,
+        with_max_level: PyLevel,
         without_time: bool,
         fmt_span: Py<PyFmtSpan>,
-        format: Py<Format>,
+        format: Format,
         file: LogFile,
         non_blocking: Option<NonBlocking>
     ) -> PyResult<Self> {
@@ -71,10 +72,10 @@ impl FmtLayer {
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level: *with_max_level.borrow(py),
+            with_max_level: Level::from(with_max_level),
             without_time,
             fmt_span: FmtSpan::from(&*fmt_span.borrow(py)),
-            format: *format.borrow(py),
+            format,
             file,
             non_blocking
         })
