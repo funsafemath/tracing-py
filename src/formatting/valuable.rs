@@ -15,7 +15,7 @@ impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {
     }
 }
 
-pub(super) enum PyCachedValuable<'py> {
+pub(crate) enum PyCachedValuable<'py> {
     Any(CachedValue<String, Bound<'py, PyAny>, CachedValuable>),
     Template(CachedValue<String, Bound<'py, PyTemplate>, CachedValuable>),
 }
