@@ -4,7 +4,11 @@ use std::io::stdout;
 
 pub(crate) use fmt::{FmtLayer, Format};
 
-use pyo3::{exceptions::PyRuntimeError, prelude::*, types::PyCFunction};
+use pyo3::{
+    exceptions::PyRuntimeError,
+    prelude::*,
+    types::{PyCFunction, PyTuple},
+};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
     FmtSubscriber, Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
@@ -14,7 +18,7 @@ use crate::{imports::get_atexit_register, layer::fmt::to_layer::ToDynLayer};
 
 trait ThreadSafeLayer = Layer<Registry> + Send + Sync;
 
-// todo: accept *args instead of a Sequence
+// todo: accept *args instead of a Sequence (or maybe not)
 #[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
 pub(crate) fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {

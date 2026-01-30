@@ -77,7 +77,7 @@ impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
 
         set_writer_and_rest(
             layer,
-            Level::from(*with_max_level),
+            *with_max_level,
             *format,
             *without_time,
             file,
