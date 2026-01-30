@@ -9,13 +9,15 @@ use crate::{
     template::template_string::PyTemplate,
 };
 
+// todo: rework the entire valuable implementation, i don't like the current one
+
 impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {
     fn value(&self) -> String {
         self.to_string()
     }
 }
 
-pub(super) enum PyCachedValuable<'py> {
+pub(crate) enum PyCachedValuable<'py> {
     Any(CachedValue<String, Bound<'py, PyAny>, CachedValuable>),
     Template(CachedValue<String, Bound<'py, PyTemplate>, CachedValuable>),
 }

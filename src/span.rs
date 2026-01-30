@@ -5,7 +5,7 @@ use valuable::Valuable;
 
 use crate::{
     callsite::{self, CallsiteAction},
-    valuable::PyCachedValuable,
+    formatting::valuable::PyCachedValuable,
 };
 
 struct SpanAction<'py> {
