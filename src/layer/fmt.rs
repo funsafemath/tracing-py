@@ -1,19 +1,11 @@
-use std::fmt::Debug;
+pub(crate) mod span;
+pub(crate) mod to_layer;
 
-use pyo3::{Bound, Py, Python, pyclass, pymethods};
-use tracing_subscriber::{
-    Layer, Registry,
-    fmt::{self, format::FmtSpan},
-};
 
-#[pyclass]
-#[derive(Clone)]
-pub(crate) enum Format {
-    Full,
-    Compact,
-    Pretty,
-    Json,
-}
+use pyo3::{FromPyObject, Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
+use tracing_subscriber::fmt::format::FmtSpan;
+
+use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
 
 #[pyclass]
 pub(crate) struct FmtLayer {
@@ -24,10 +16,12 @@ pub(crate) struct FmtLayer {
     with_line_number: Option<bool>,
     with_target: Option<bool>,
     with_thread_ids: Option<bool>,
-    with_max_level: Option<crate::level::PyLevel>,
+    with_max_level: crate::level::PyLevel,
     without_time: bool,
     fmt_span: FmtSpan,
     format: Format,
+    file: LogFile,
+    non_blocking: Option<NonBlocking>
 }
 
 #[pymethods]
@@ -37,10 +31,22 @@ impl FmtLayer {
         reason = "how else am I supposed to implement a python constructor?"
     )]
     #[new]
-    #[pyo3(signature = (*, log_internal_errors = None, with_ansi = None, with_file = None, with_level = None,
-    with_line_number = None, with_target = None, with_thread_ids = None, with_max_level = None, without_time = false,
-                fmt_span=Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
-format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
+    #[pyo3(signature = (*, 
+           log_internal_errors = None,
+           with_ansi = None, 
+           with_file = None, 
+           with_level = None,
+           with_line_number = None,
+           with_target = None,
+           with_thread_ids = None, 
+           with_max_level = Python::attach(|x| {Py::new(x, PyLevel::INFO)}).unwrap(), 
+           without_time = false,
+           fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
+           format = Python::attach(|x| {Py::new(x, Format::Full)}).unwrap(), 
+           // tracing uses stdout by default, not sure why
+           // https://github.com/tokio-rs/tracing/issues/2492
+           file = LogFile::Stdout,
+           non_blocking = None ))]
     fn new(
         py: Python,
         log_internal_errors: Option<bool>,
@@ -50,12 +56,14 @@ format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
         with_line_number: Option<bool>,
         with_target: Option<bool>,
         with_thread_ids: Option<bool>,
-        with_max_level: Option<Bound<'_, crate::level::PyLevel>>,
+        with_max_level: Py<crate::level::PyLevel>,
         without_time: bool,
         fmt_span: Py<PyFmtSpan>,
         format: Py<Format>,
-    ) -> Self {
-        Self {
+        file: LogFile,
+        non_blocking: Option<NonBlocking>
+    ) -> PyResult<Self> {
+       Ok( Self {
             log_internal_errors,
             with_ansi,
             with_file,
@@ -63,120 +71,69 @@ format=Python::attach(|x| {Py::new(x, Format::Full)}).unwrap() ))]
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level: with_max_level.map(|x| *x.borrow()),
+            with_max_level: *with_max_level.borrow(py),
             without_time,
-            fmt_span: fmt_span.borrow(py).0.clone(),
-            format: format.borrow(py).clone(),
-        }
+            fmt_span: FmtSpan::from(&*fmt_span.borrow(py)),
+            format: *format.borrow(py),
+            file,
+            non_blocking
+        })
     }
 }
 
-impl From<&FmtLayer> for Box<dyn Layer<Registry> + Send + Sync> {
-    fn from(value: &FmtLayer) -> Self {
-        let FmtLayer {
-            log_internal_errors,
-            with_ansi,
-            with_file,
-            with_level,
-            with_line_number,
-            with_target,
-            with_thread_ids,
-            // todo impl
-            with_max_level,
-            without_time,
-            fmt_span,
-            format,
-        } = value;
+#[pyclass]
+#[derive(Clone, Copy)]
+pub(crate) enum Format {
+    #[pyo3(name = "FULL")]
+    Full,
+    #[pyo3(name = "COMPACT")]
+    Compact,
+    #[pyo3(name = "PRETTY")]
+    Pretty,
+    #[pyo3(name = "JSON")]
+    Json,
+}
 
-        // chaining methods would be more elegant, but it requires guessing the default values
-        let mut layer: fmt::Layer<Registry> = fmt::layer();
 
-        if let Some(log_internal_errors) = log_internal_errors {
-            layer = layer.log_internal_errors(*log_internal_errors);
-        }
+#[pyclass]
+#[derive(Clone, Copy)]
+pub(crate) enum NonBlocking {
+    #[pyo3(name = "LOSSY")]
+    Lossy,
+    #[pyo3(name = "COMPLETE")]
+    Complete
+}
 
-        if let Some(with_ansi) = with_ansi {
-            layer = layer.with_ansi(*with_ansi);
-        }
+enum LogFile {
+    Stdout,
+    Stderr,
+    Path(String),
+}
 
-        if let Some(with_file) = with_file {
-            layer = layer.with_file(*with_file);
-        }
+impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
+    type Error = PyErr;
 
-        if let Some(with_level) = with_level {
-            layer = layer.with_level(*with_level);
-        }
-
-        if let Some(with_line_number) = with_line_number {
-            layer = layer.with_line_number(*with_line_number);
-        }
-
-        if let Some(with_target) = with_target {
-            layer = layer.with_target(*with_target);
-        }
-
-        if let Some(with_thread_ids) = with_thread_ids {
-            layer = layer.with_thread_ids(*with_thread_ids);
-        }
-
-        layer = layer.with_span_events(fmt_span.clone());
-
-        // incredibly ugly, but i didn't find a simple way to do this due to generic parameters
-        // i'll think about it later
-        match (format, without_time) {
-            (Format::Full, true) => Box::new(layer.without_time()),
-            (Format::Full, false) => Box::new(layer),
-            (Format::Compact, true) => Box::new(layer.compact().without_time()),
-            (Format::Compact, false) => Box::new(layer.compact()),
-            (Format::Pretty, true) => Box::new(layer.pretty().without_time()),
-            (Format::Pretty, false) => Box::new(layer.pretty()),
-            (Format::Json, true) => Box::new(layer.json().without_time()),
-            (Format::Json, false) => Box::new(layer.json()),
-        }
+    fn extract(obj: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
+        Ok(if let Ok(log_file) = obj.cast::<PyLogFile>() {
+            match *log_file.borrow() {
+                PyLogFile::Stdout => Self::Stdout,
+                PyLogFile::Stderr => Self::Stderr,
+            }
+        }else {
+          let log_file = obj.extract::<String>()?;
+          Self::Path(log_file)  
+        } )
     }
 }
 
-#[pyclass(name = "FmtSpan")]
-pub(crate) struct PyFmtSpan(FmtSpan);
 
-#[pymethods]
-impl PyFmtSpan {
-    #[classattr]
-    const NEW: Self = Self(FmtSpan::NEW);
-
-    #[classattr]
-    const ENTER: Self = Self(FmtSpan::ENTER);
-
-    #[classattr]
-    const EXIT: Self = Self(FmtSpan::EXIT);
-
-    #[classattr]
-    const CLOSE: Self = Self(FmtSpan::CLOSE);
-
-    #[classattr]
-    const NONE: Self = Self(FmtSpan::NONE);
-
-    #[classattr]
-    const ACTIVE: Self = Self(FmtSpan::ACTIVE);
-
-    #[classattr]
-    const FULL: Self = Self(FmtSpan::FULL);
-
-    fn __or__<'py>(&self, other: Bound<'py, Self>) -> Self {
-        Self(self.0.clone() & other.borrow().0.clone())
-    }
-
-    fn __and__<'py>(&self, other: Bound<'py, Self>) -> Self {
-        Self(self.0.clone() & other.borrow().0.clone())
-    }
-
-    fn __repr__(&self) -> String {
-        format!("{self:?}")
-    }
+#[pyclass(name = "File")]
+#[derive(Clone)]
+pub(crate) enum PyLogFile {
+    #[pyo3(name = "STDOUT")]
+    Stdout,
+    #[pyo3(name = "STDERR")]
+    Stderr,
 }
 
-impl Debug for PyFmtSpan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
+
