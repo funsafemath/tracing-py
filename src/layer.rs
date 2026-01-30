@@ -1,37 +1,102 @@
-mod fmt;
+pub(crate) mod fmt;
 
-pub(crate) use fmt::{FmtLayer, Format, PyFmtSpan};
+use std::io::stdout;
 
-use pyo3::{Bound, PyAny, PyResult, exceptions::PyRuntimeError, pyfunction, types::PyAnyMethods};
+pub(crate) use fmt::{FmtLayer, Format};
+
+use pyo3::{exceptions::PyRuntimeError, prelude::*, types::PyCFunction};
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
     FmtSubscriber, Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
 };
 
+use crate::{imports::get_atexit_register, layer::fmt::to_layer::DynLayer};
+
+#[pyclass]
+struct PyGuardVec {
+    guards: Option<Vec<WorkerGuard>>,
+}
+
+impl PyGuardVec {
+    fn new(guards: Vec<WorkerGuard>) -> Self {
+        Self {
+            guards: Some(guards),
+        }
+    }
+
+    fn drop_guards(&mut self) {
+        assert!(self.guards.is_some());
+        self.guards = None;
+    }
+}
+
+trait PyGuardsMethods {
+    fn drop_at_exit(self) -> PyResult<()>;
+}
+
+impl<'py> PyGuardsMethods for Bound<'py, PyGuardVec> {
+    // todo: we can check if it's empty, and skip atexit setup if it is
+    fn drop_at_exit(self) -> PyResult<()> {
+        let closure = match PyCFunction::new_closure(self.py(), None, None, {
+            let guard_vec = self.clone().unbind();
+
+            move |args, _| {
+                let py = args.py();
+                guard_vec.borrow_mut(py).drop_guards();
+            }
+        }) {
+            Ok(closure) => closure,
+            Err(err) => {
+                // python should do it itself, but why not be even more sure that worker threads will be stopped?
+                self.borrow_mut().drop_guards();
+                return Err(err);
+            }
+        };
+        match get_atexit_register(self.py()).call1((&closure,)) {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                // same
+                self.borrow_mut().drop_guards();
+                Err(err)
+            }
+        }
+    }
+}
+
 // todo: accept *args instead of a Sequence
 #[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
-pub(crate) fn py_init(layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
-    let layers: Vec<Box<dyn Layer<Registry> + Send + Sync>> = match layers {
+pub(crate) fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
+    let layers_with_guards = match layers {
         Some(layers) => {
             if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
                 layers
                     .into_iter()
-                    .map(|x: Bound<'_, FmtLayer>| (&*x.borrow()).into())
-                    .collect()
+                    .map(|x: Bound<'_, FmtLayer>| x.dyn_layer())
+                    .collect::<PyResult<Vec<(_, _)>>>()?
             } else {
-                let layer = layers.cast::<FmtLayer>()?;
-                vec![(&*layer.borrow()).into()]
+                vec![layers.cast::<FmtLayer>()?.dyn_layer()?]
             }
         }
-        None => vec![Box::new(
-            tracing_subscriber::fmt::layer().with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL),
-        )],
+        None => {
+            // todo: ensure that this default layer is equal to the default FmtLayer()
+            let (writer, guard) = tracing_appender::non_blocking(stdout());
+            let layer = tracing_subscriber::fmt::layer()
+                .with_writer(writer)
+                .with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
+            let dyn_layer: Box<dyn Layer<Registry> + Send + Sync> = Box::new(layer);
+
+            vec![(dyn_layer, Some(guard))]
+        }
     };
+
+    let (layers, guards): (Vec<_>, Vec<_>) = layers_with_guards.into_iter().unzip();
 
     registry()
         .with(layers)
         .try_init()
         .map_err(|x| PyRuntimeError::new_err(x.to_string()))?;
 
-    Ok(())
+    let guard_vec = PyGuardVec::new(guards.into_iter().flatten().collect());
+    guard_vec.into_pyobject(py)?.drop_at_exit()
 }

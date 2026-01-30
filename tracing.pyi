@@ -1,9 +1,8 @@
-# Docstrings are copied from the tracing crate
+# Most docstrings are copied from the tracing crate
 
 from string.templatelib import Template
 from typing import Any, Callable, Self, Sequence, TypeVar, overload
 
-# todo: pick either uppercase or camelcase for enum-like classes
 class Level:
     """Describes the level of verbosity of a span or event."""
 
@@ -67,7 +66,7 @@ class FmtSpan:
 class Format:
     """Formatters for logging tracing events."""
 
-    Full: Format
+    FULL: Format
     """The default formatter.
     
     This emits human-readable,
@@ -75,7 +74,7 @@ class Format:
     displayed before the formatted representation of the event.
     """
 
-    Compact: Format
+    COMPACT: Format
     """A variant of the default formatter, optimized for short line lengths.
     
     Fields from the current span context are appended to
@@ -83,7 +82,7 @@ class Format:
     verbosity level is abbreviated to a single character.
     """
 
-    Pretty: Format
+    PRETTY: Format
     """Emits excessively pretty, multi-line logs, optimized for human readability.
 
     This is primarily intended to be used in local
@@ -93,7 +92,7 @@ class Format:
     for sample output.
     """
 
-    Json: Format
+    JSON: Format
     """
     Outputs newline-delimited JSON logs.
 
@@ -102,6 +101,10 @@ class Format:
     by analysis and viewing tools. The JSON output is not optimized for human
     readability. See [here](Json#example-output) for sample output.
     """
+
+class File:
+    STDOUT: File
+    STDERR: File
 
 class FmtLayer:
     def __new__(
@@ -114,11 +117,35 @@ class FmtLayer:
         with_line_number: bool | None = None,
         with_target: bool | None = None,
         with_thread_ids: bool | None = None,
-        with_max_level: bool | None = None,
+        with_max_level: Level = Level.INFO,
         without_time: bool = False,
         fmt_span: FmtSpan = FmtSpan.NONE,
-        format: Format = Format.Full,
+        format: Format = Format.FULL,
+        file: File | str = File.STDOUT,
+        non_blocking: NonBlocking | None = None,
     ) -> Self: ...
+    """
+    Creates a new FmtLayer
+
+        with_max_level
+            creates a filter that passes only the events with level <= with_max_level,
+            ERROR < WARN < INFO < DEBUG < TRACE
+
+        non_blocking
+            if none, tracing will log messages in blocking mode, 
+            if passed, I/O will be delegated to a separate non-GIL-bound thread
+    """
+
+class NonBlocking:
+    """Sets whether logger should be lossy or not.
+
+    This has effect only if the logger has reached its max capacity, which is 128_000 lines by default"""
+
+    LOSSY: NonBlocking
+    """logs will be dropped when the buffered limit is reached"""
+
+    COMPLETE: NonBlocking
+    """backpressure will be exerted on senders, blocking them until the buffer has capacity again"""
 
 def init(registry: FmtLayer | Sequence[FmtLayer] | None = None) -> None: ...
 @overload
