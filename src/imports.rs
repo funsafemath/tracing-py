@@ -2,7 +2,7 @@ use pyo3::{
     PyTypeCheck,
     prelude::*,
     sync::PyOnceLock,
-    types::{PyFunction, PyType},
+    types::{PyCFunction, PyFunction, PyType},
 };
 
 macro_rules! mk_import {
@@ -30,6 +30,8 @@ mk_import!(get_inspect_signature, "inspect", "signature", PyFunction);
 mk_import!(get_inspect_signature_type, "inspect", "Signature", PyType);
 mk_import!(get_inspect_parameter_type, "inspect", "Parameter", PyType);
 
+mk_import!(get_atexit_register, "atexit", "register", PyCFunction);
+
 fn get_or_import<'py, 'a, T: PyTypeCheck>(
     py: Python<'py>,
     lock: &'a PyOnceLock<Py<T>>,
@@ -38,6 +40,18 @@ fn get_or_import<'py, 'a, T: PyTypeCheck>(
 ) -> &'a Bound<'py, T> {
     lock.get_or_init(py, || import(module, item).unwrap())
         .bind(py)
+}
+
+// todo: use this to make templates optional, so library works on python < 3.14
+fn get_or_import_maybe<'py, T: PyTypeCheck>(
+    py: Python<'py>,
+    lock: &'static PyOnceLock<Option<Py<T>>>,
+    module: &'static str,
+    item: &'static str,
+) -> Option<&'static Bound<'py, T>> {
+    lock.get_or_init(py, || import(module, item).ok())
+        .as_ref()
+        .map(|x| x.bind(py))
 }
 
 fn import<T: PyTypeCheck>(module: &str, item: &str) -> PyResult<Py<T>> {
