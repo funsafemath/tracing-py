@@ -9,6 +9,8 @@ use pyo3::{
 use crate::ext::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt};
 
 unsafe extern "C" {
+    // todo: use deprecated PyEval_GetGlobals to support python < 3.13
+    // or don't use globals at all
     pub fn PyEval_GetFrameGlobals() -> *mut ffi::PyObject;
 }
 
