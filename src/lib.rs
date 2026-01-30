@@ -4,6 +4,7 @@ mod cached;
 mod callsite;
 mod event;
 mod ext;
+mod formatting;
 mod imports;
 mod instrument;
 mod introspect;
@@ -12,7 +13,6 @@ mod leak;
 mod level;
 mod span;
 mod template;
-mod valuable;
 
 use pyo3::prelude::*;
 
