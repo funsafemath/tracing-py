@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 eyre = "0.6.12"
 pyo3 = { version = "0.27.2", features = ["eyre"] }
 tracing = { version = "0.1.44", features = ["valuable"] }
+tracing-appender = "0.2.4"
 tracing-core = "0.1.36"
 tracing-subscriber = { version = "0.3.22", features = ["json", "valuable"] }
 valuable = "0.1.1"
