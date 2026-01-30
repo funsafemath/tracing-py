@@ -4,7 +4,11 @@ use std::io::stdout;
 
 pub(crate) use fmt::{FmtLayer, Format};
 
-use pyo3::{exceptions::PyRuntimeError, prelude::*, types::PyCFunction};
+use pyo3::{
+    exceptions::PyRuntimeError,
+    prelude::*,
+    types::{PyCFunction, PyTuple},
+};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
     FmtSubscriber, Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
@@ -16,8 +20,8 @@ trait ThreadSafeLayer = Layer<Registry> + Send + Sync;
 
 // todo: accept *args instead of a Sequence
 #[pyfunction(name = "init")]
-#[pyo3(signature = (layers = None))]
-pub(crate) fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
+#[pyo3(signature = (*layers))]
+pub(crate) fn py_init(py: Python<'_>, layers: Bound<'_, PyTuple>) -> PyResult<()> {
     let layers_with_guards = match layers {
         Some(layers) => {
             if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
