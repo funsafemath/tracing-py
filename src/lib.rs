@@ -1,4 +1,5 @@
 #![feature(exact_size_is_empty)]
+#![feature(trait_alias)]
 
 mod cached;
 mod callsite;
@@ -27,7 +28,11 @@ mod tracing {
     use event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{FmtLayer, Format, PyFmtSpan, py_init};
+    use layer::{
+        FmtLayer, Format,
+        fmt::{OutFile, span::PyFmtSpan},
+        py_init,
+    };
 
     #[pymodule_export]
     use instrument::py_instrument;

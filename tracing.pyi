@@ -1,4 +1,4 @@
-# Docstrings are copied from the tracing crate
+# Most docstrings are copied from the tracing crate
 
 from string.templatelib import Template
 from typing import Any, Callable, Self, Sequence, TypeVar, overload
@@ -114,11 +114,24 @@ class FmtLayer:
         with_line_number: bool | None = None,
         with_target: bool | None = None,
         with_thread_ids: bool | None = None,
-        with_max_level: bool | None = None,
+        with_max_level: Level = Level.INFO,
         without_time: bool = False,
         fmt_span: FmtSpan = FmtSpan.NONE,
         format: Format = Format.Full,
     ) -> Self: ...
+    """
+    Creates a new FmtLayer
+
+        with_max_level
+            creates a filter that passes only the events with level <= with_max_level,
+            ERROR < WARN < INFO < DEBUG < TRACE
+    """
+
+class File:
+    STDOUT: File
+    STDERR: File
+
+    def __new__(cls, path: str) -> Self: ...
 
 def init(registry: FmtLayer | Sequence[FmtLayer] | None = None) -> None: ...
 @overload
