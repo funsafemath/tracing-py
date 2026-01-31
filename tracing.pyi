@@ -181,6 +181,9 @@ def instrument(
     skip_all: bool | None = None,
 ) -> Callable[[T], T]: ...
 @overload
+
+# looks like pycharm isn't intelligent enough to understand that instrument(F) accepts same arguments as F,
+# use `ty` or `Pyright`
 def instrument(func: T) -> T: ...
 
 __all__ = [
