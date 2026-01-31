@@ -121,6 +121,11 @@ class FmtLayer:
     def __new__(
         cls,
         *,
+        log_level: Level = Level.INFO,
+        file: File | str = File.STDOUT,
+        format: Format = Format.FULL,
+        fmt_span: FmtSpan = FmtSpan.NONE,
+        non_blocking: NonBlocking | None = None,
         log_internal_errors: bool | None = None,
         with_ansi: bool | None = None,
         with_file: bool | None = None,
@@ -128,18 +133,13 @@ class FmtLayer:
         with_line_number: bool | None = None,
         with_target: bool | None = None,
         with_thread_ids: bool | None = None,
-        with_max_level: Level = Level.INFO,
         without_time: bool = False,
-        fmt_span: FmtSpan = FmtSpan.NONE,
-        format: Format = Format.FULL,
-        file: File | str = File.STDOUT,
-        non_blocking: NonBlocking | None = None,
     ) -> Self: ...
     """
     Creates a new FmtLayer
 
-        with_max_level
-            creates a filter that passes only the events with level <= with_max_level,
+        log_level
+            creates a filter that passes only the events with level <= log_level,
             ERROR < WARN < INFO < DEBUG < TRACE
 
         non_blocking
@@ -182,3 +182,19 @@ def instrument(
 ) -> Callable[[T], T]: ...
 @overload
 def instrument(func: T) -> T: ...
+
+__all__ = [
+    "init",
+    "instrument",
+    "trace",
+    "debug",
+    "info",
+    "warn",
+    "error",
+    "Level",
+    "FmtLayer",
+    "Format",
+    "File",
+    "FmtSpan",
+    "NonBlocking",
+]

@@ -34,8 +34,8 @@ impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level,
             without_time,
+            log_level,
             fmt_span,
             format,
             file,
@@ -77,7 +77,7 @@ impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
 
         set_writer_and_rest(
             layer,
-            *with_max_level,
+            *log_level,
             *format,
             *without_time,
             file,

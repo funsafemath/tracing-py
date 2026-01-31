@@ -10,15 +10,15 @@ use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
 
 #[pyclass]
 pub(crate) struct FmtLayer {
-    log_internal_errors: Option<bool>,
     with_ansi: Option<bool>,
     with_file: Option<bool>,
     with_level: Option<bool>,
     with_line_number: Option<bool>,
     with_target: Option<bool>,
     with_thread_ids: Option<bool>,
-    with_max_level: Level,
     without_time: bool,
+    log_internal_errors: Option<bool>,
+    log_level: Level,
     fmt_span: FmtSpan,
     format: Format,
     file: LogFile,
@@ -32,24 +32,30 @@ impl FmtLayer {
         reason = "how else am I supposed to implement a python constructor?"
     )]
     #[new]
-    #[pyo3(signature = (*, 
-           log_internal_errors = None,
-           with_ansi = None, 
-           with_file = None, 
-           with_level = None,
-           with_line_number = None,
-           with_target = None,
-           with_thread_ids = None, 
-           with_max_level = PyLevel::Info, 
-           without_time = false,
-           fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
-           format = Format::Full, 
-           // tracing uses stdout by default, not sure why
-           // https://github.com/tokio-rs/tracing/issues/2492
-           file = LogFile::Stdout,
-           non_blocking = None ))]
+    #[pyo3(
+        signature = (*, 
+        log_level = PyLevel::Info, 
+        // tracing uses stdout by default, not sure why
+        // https://github.com/tokio-rs/tracing/issues/2492
+        file = LogFile::Stdout,
+        format = Format::Full, 
+        fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
+        non_blocking = None,
+        log_internal_errors = None,
+        with_ansi = None, 
+        with_file = None, 
+        with_level = None,
+        with_line_number = None,
+        with_target = None,
+        with_thread_ids = None, 
+        without_time = false))]
     fn new(
         py: Python,
+        log_level: PyLevel,
+        file: LogFile,
+        format: Format,
+        fmt_span: Py<PyFmtSpan>,
+        non_blocking: Option<NonBlocking>,
         log_internal_errors: Option<bool>,
         with_ansi: Option<bool>,
         with_file: Option<bool>,
@@ -57,12 +63,7 @@ impl FmtLayer {
         with_line_number: Option<bool>,
         with_target: Option<bool>,
         with_thread_ids: Option<bool>,
-        with_max_level: PyLevel,
         without_time: bool,
-        fmt_span: Py<PyFmtSpan>,
-        format: Format,
-        file: LogFile,
-        non_blocking: Option<NonBlocking>
     ) -> PyResult<Self> {
        Ok( Self {
             log_internal_errors,
@@ -72,7 +73,7 @@ impl FmtLayer {
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level: Level::from(with_max_level),
+            log_level: Level::from(log_level),
             without_time,
             fmt_span: FmtSpan::from(&*fmt_span.borrow(py)),
             format,
