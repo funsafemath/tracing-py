@@ -27,6 +27,12 @@ pub(crate) trait ToDynLayer {
 impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
     fn dyn_layer(&self) -> PyResult<(Box<dyn ThreadSafeLayer>, Option<WorkerGuard>)> {
         let FmtLayer {
+            log_level,
+            file,
+            format,
+            fmt_span,
+            non_blocking,
+            without_time,
             log_internal_errors,
             with_ansi,
             with_file,
@@ -34,12 +40,6 @@ impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
             with_line_number,
             with_target,
             with_thread_ids,
-            with_max_level,
-            without_time,
-            fmt_span,
-            format,
-            file,
-            non_blocking,
         } = &*self.borrow();
 
         // chaining methods would be more elegant, but it requires guessing the default values
@@ -77,7 +77,7 @@ impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
 
         set_writer_and_rest(
             layer,
-            *with_max_level,
+            *log_level,
             *format,
             *without_time,
             file,
