@@ -28,7 +28,7 @@ impl PyFmtSpan {
     pub(crate) const FULL: Self = Self(FmtSpan::FULL);
 
     fn __or__<'py>(&self, other: Bound<'py, Self>) -> Self {
-        Self(self.0.clone() & other.borrow().0.clone())
+        Self(self.0.clone() | other.borrow().0.clone())
     }
 
     fn __and__<'py>(&self, other: Bound<'py, Self>) -> Self {
