@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use pyo3::{Bound, PyAny};
+use pyo3::{Bound, PyAny, types::PyAnyMethods};
 use valuable::{Valuable, Value, Visit};
 
 use crate::{
@@ -17,8 +17,15 @@ impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {
     }
 }
 
+impl<'py, T> GetValue<f64, CachedValuable> for Bound<'py, T> {
+    fn value(&self) -> f64 {
+        self.as_any().extract().unwrap()
+    }
+}
+
 pub(crate) enum PyCachedValuable<'py> {
     Any(CachedValue<String, Bound<'py, PyAny>, CachedValuable>),
+    Float(CachedValue<f64, Bound<'py, PyAny>, CachedValuable>),
     Template(CachedValue<String, Bound<'py, PyTemplate>, CachedValuable>),
 }
 
@@ -26,8 +33,9 @@ pub(crate) enum PyCachedValuable<'py> {
 impl<'py> Valuable for PyCachedValuable<'py> {
     fn as_value(&self) -> Value<'_> {
         match self {
-            PyCachedValuable::Any(cached_valuable) => cached_valuable.as_value(),
-            PyCachedValuable::Template(cached_valuable) => cached_valuable.as_value(),
+            PyCachedValuable::Any(cached_value) => cached_value.as_value(),
+            PyCachedValuable::Template(cached_value) => cached_value.as_value(),
+            PyCachedValuable::Float(cached_value) => cached_value.as_value(),
         }
     }
 
@@ -50,6 +58,7 @@ impl<'py> Display for PyCachedValuable<'py> {
         let string = match self {
             PyCachedValuable::Any(cached_value) => cached_value.inner_ref().to_string(),
             PyCachedValuable::Template(cached_value) => cached_value.inner_ref().format(),
+            PyCachedValuable::Float(cached_value) => cached_value.inner_ref().to_string(),
         };
         write!(f, "{string}")
     }

@@ -2,6 +2,9 @@ use pyo3::{PyTypeInfo, prelude::*, types::PyTuple};
 
 use crate::{imports::get_template_type, infallible_attr};
 
+// pub fn is_available() {
+//     get_template_type(py)
+// }
 #[repr(transparent)]
 pub(crate) struct PyTemplate(PyAny);
 
