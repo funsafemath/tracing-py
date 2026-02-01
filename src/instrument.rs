@@ -4,14 +4,13 @@ mod parameter;
 mod py_signature;
 mod signature;
 
-use std::collections::HashSet;
-
 use pyo3::{
     IntoPyObjectExt,
     exceptions::PyValueError,
     prelude::*,
     types::{PyCFunction, PyDict, PyFrame, PyFunction, PyTuple},
 };
+use rapidhash::RapidHashSet;
 use tracing::{Level, error};
 use tracing_core::Kind;
 
@@ -102,7 +101,7 @@ fn instrument<'py>(
 #[derive(Clone)]
 struct InstrumentOptions {
     level: Level,
-    skip: HashSet<String>,
+    skip: RapidHashSet<String>,
     skip_all: bool,
 }
 
