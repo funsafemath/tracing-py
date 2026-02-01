@@ -2,15 +2,13 @@ mod default;
 mod empty;
 mod kind;
 
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, Mutex},
-};
+use std::sync::{LazyLock, Mutex};
 
 use pyo3::{
     Bound, Python,
     types::{PyCode, PyFrame},
 };
+use rapidhash::RapidHashMap;
 use tracing::{Level, Metadata, Value, field::ValueSet, level_filters, warn};
 use tracing_core::{Callsite, Kind, LevelFilter, callsite::DefaultCallsite};
 
@@ -50,7 +48,7 @@ pub(crate) fn get_or_init_callsite(
 ) -> &'static DefaultCallsite {
     // no need to use rwlock/dashmap as we're forced into singlethreaded execution by GIL
     // turns out pyo3 has free-threaded python support, so it may be better to use an rwlock
-    static CALLSITES: LazyLock<Mutex<HashMap<CallsiteIdentifier, &'static DefaultCallsite>>> =
+    static CALLSITES: LazyLock<Mutex<RapidHashMap<CallsiteIdentifier, &'static DefaultCallsite>>> =
         LazyLock::new(Mutex::default);
 
     let (frame, code) = ctx.frame_and_code();
