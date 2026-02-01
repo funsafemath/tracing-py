@@ -9,9 +9,12 @@ use tracing_core::Kind;
 use valuable::Valuable;
 
 use crate::{
-    cached::{CachedDisplay, CachedValue},
+    cached::{CachedDisplay, CachedValuable, CachedValue},
     callsite::{self, CallsiteAction},
-    formatting::{percent::PercentFormatted, valuable::PyCachedValuable},
+    formatting::{
+        percent::PercentFormatted,
+        test_valuable::{OwnedValuable, PyCachedValuable},
+    },
     leak::{Leaker, VecLeaker},
 };
 
@@ -88,6 +91,8 @@ pub(crate) fn leak_or_get_kwargs<'py>(
         let mut leaker = leaker.unwrap_or(Leaker::acquire());
 
         for (key, value) in kwargs.iter() {
+            let value: CachedValue<OwnedValuable, Bound<'_, PyAny>, CachedValuable> =
+                PyCachedValuable::from(value);
             fields.push(leaker.leak_or_get(key.to_string()));
             values.push(PyCachedValuable::from(value));
         }
@@ -136,11 +141,13 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         // though it's probably possible to cached the value only if there's more than 1 active layer,
         // that's more efficient
         // todo: rework this and the valuable module
+
         match self.message {
             Message::Any(None) => f(fields, &values),
             Message::Any(Some(message)) => {
-                let message: CachedValue<_, _, CachedDisplay> =
-                    CachedValue::from(PyCachedValuable::from(message));
+                // let message: CachedValue<_, _, CachedDisplay> =
+                //     CachedValue::from(PyCachedValuable::from(message));
+                let message = PyCachedValuable::from(message);
                 let args = format_args!("{message}");
                 // todo: do not use insert
                 values.insert(0, Some(&args as &dyn Value));
