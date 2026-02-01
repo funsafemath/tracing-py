@@ -60,6 +60,7 @@ impl<S: StrFmt> Valuable for OwnedValuable<S> {
 }
 
 // deferring any type checks until the value is required, so we don't waste time on filtered events
+// should we use cast instead of cast_exact? not sure if anyone subclasses primitives
 impl<'py, S: StrFmt> GetValue<OwnedValuable<S>, CachedValuable> for Bound<'py, PyAny> {
     fn value(&self) -> OwnedValuable<S> {
         if self.is_none() {
