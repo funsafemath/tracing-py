@@ -1,7 +1,10 @@
-use std::fmt::{Display, Formatter};
+use std::marker::PhantomData;
 
-use pyo3::{Bound, PyAny};
-use valuable::{Valuable, Value, Visit};
+use pyo3::{
+    prelude::*,
+    types::{PyBool, PyFloat, PyInt},
+};
+use valuable::{Valuable, Value};
 
 use crate::{
     cached::{CachedValuable, CachedValue, GetValue},
@@ -9,48 +12,73 @@ use crate::{
     template::template_string::PyTemplate,
 };
 
-// todo: rework the entire valuable implementation, i don't like the current one
+pub(crate) trait StrFmt {
+    fn make(str: &str) -> Value<'_>;
+}
 
-impl<'py, T> GetValue<String, CachedValuable> for Bound<'py, T> {
-    fn value(&self) -> String {
-        self.to_string()
+pub(crate) enum QuotedString {}
+pub(crate) enum UnquotedString {}
+
+impl StrFmt for QuotedString {
+    fn make(str: &str) -> Value<'_> {
+        Value::String(str)
     }
 }
 
-pub(crate) enum PyCachedValuable<'py> {
-    Any(CachedValue<String, Bound<'py, PyAny>, CachedValuable>),
-    Template(CachedValue<String, Bound<'py, PyTemplate>, CachedValuable>),
+impl StrFmt for UnquotedString {
+    fn make(str: &str) -> Value<'_> {
+        Value::UnquotedString(str)
+    }
 }
 
-// todo: log lists/dicts/bools/ints/floats/nulls as their respective json types
-impl<'py> Valuable for PyCachedValuable<'py> {
+pub(crate) type PyCachedValuable<'py, S> =
+    CachedValue<OwnedValuable<S>, Bound<'py, PyAny>, CachedValuable>;
+
+// todo: add list/dict here
+pub(crate) enum OwnedValuable<S: StrFmt> {
+    SmallInt(i128),
+    Float(f64),
+    Bool(bool),
+    None,
+    Str(String, PhantomData<S>),
+}
+
+impl<S: StrFmt> Valuable for OwnedValuable<S> {
     fn as_value(&self) -> Value<'_> {
         match self {
-            PyCachedValuable::Any(cached_valuable) => cached_valuable.as_value(),
-            PyCachedValuable::Template(cached_valuable) => cached_valuable.as_value(),
+            Self::SmallInt(int) => Value::I128(*int),
+            Self::Float(float) => Value::F64(*float),
+            Self::Bool(bool) => Value::Bool(*bool),
+            Self::None => Value::Unit,
+            Self::Str(str, _) => S::make(str),
         }
     }
 
-    fn visit(&self, visit: &mut dyn Visit) {
-        visit.visit_value(self.as_value());
+    fn visit(&self, visit: &mut dyn valuable::Visit) {
+        self.as_value().visit(visit);
     }
 }
 
-impl<'py> From<Bound<'py, PyAny>> for PyCachedValuable<'py> {
-    fn from(value: Bound<'py, PyAny>) -> Self {
-        match value.cast_into::<PyTemplate>() {
-            Ok(template) => PyCachedValuable::Template(template.into()),
-            Err(value) => PyCachedValuable::Any(value.into_inner().into()),
+// deferring any type checks until the value is required, so we don't waste time on filtered events
+impl<'py, S: StrFmt> GetValue<OwnedValuable<S>, CachedValuable> for Bound<'py, PyAny> {
+    fn value(&self) -> OwnedValuable<S> {
+        if self.is_none() {
+            OwnedValuable::None
+        } else if let Ok(int) = self.cast_exact::<PyInt>()
+            && let Ok(int) = int.extract::<i128>()
+        {
+            // it's possible to improve bigint conversion speed,
+            // even extracting a num-bigint and converting it to a string is faster than python's string conversion function,
+            // and rug (gmp) is even faster
+            OwnedValuable::SmallInt(int)
+        } else if let Ok(float) = self.cast_exact::<PyFloat>() {
+            OwnedValuable::Float(PyFloatMethods::value(float))
+        } else if let Ok(bool) = self.cast_exact::<PyBool>() {
+            OwnedValuable::Bool(bool.is_true())
+        } else if let Ok(tmpl) = self.cast_exact::<PyTemplate>() {
+            OwnedValuable::<S>::Str(tmpl.format(), PhantomData)
+        } else {
+            OwnedValuable::<S>::Str(self.to_string(), PhantomData)
         }
-    }
-}
-
-impl<'py> Display for PyCachedValuable<'py> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let string = match self {
-            PyCachedValuable::Any(cached_value) => cached_value.inner_ref().to_string(),
-            PyCachedValuable::Template(cached_value) => cached_value.inner_ref().format(),
-        };
-        write!(f, "{string}")
     }
 }

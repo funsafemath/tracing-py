@@ -5,7 +5,7 @@ use valuable::Valuable;
 
 use crate::{
     callsite::{self, CallsiteAction},
-    formatting::valuable::PyCachedValuable,
+    formatting::valuable::{PyCachedValuable, QuotedString},
 };
 
 struct SpanAction<'py> {
@@ -25,10 +25,9 @@ impl<'py> CallsiteAction for SpanAction<'py> {
         let values: Vec<_> = self
             .values
             .into_iter()
-            .map(PyCachedValuable::from)
-            .collect();
+            .map(PyCachedValuable::<QuotedString>::from)
+            .collect::<Vec<_>>();
 
-        // this vector seems unnecessary
         let values = values
             .iter()
             .map(|x| x as &dyn Valuable)
@@ -54,7 +53,5 @@ pub(crate) fn span(
     values: Vec<Bound<'_, PyAny>>,
     callsite: &'static DefaultCallsite,
 ) -> Option<Span> {
-    // todo: rn the callsite is created from the current stack frame, which is wrong
-    // i want to implement spans for async function/generators first, then i'll fix this
     callsite::do_action(py, level, SpanAction { fields, values }, Some(callsite))
 }

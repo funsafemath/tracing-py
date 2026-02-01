@@ -31,8 +31,4 @@ impl<V, T: GetValue<V, M>, M> CachedValue<V, T, M> {
     pub(super) fn get_or_init(&self) -> &V {
         self.cached.get_or_init(|| self.inner.value())
     }
-
-    pub(super) fn inner_ref(&self) -> &T {
-        &self.inner
-    }
 }
