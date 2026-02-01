@@ -1,5 +1,6 @@
-use std::sync::{LazyLock, Mutex, MutexGuard};
+use std::sync::LazyLock;
 
+use parking_lot::{Mutex, MutexGuard};
 use rapidhash::RapidHashSet;
 use tracing::warn;
 
@@ -20,7 +21,7 @@ pub(super) struct Leaker<'a> {
 impl<'a> Leaker<'a> {
     pub(super) fn acquire() -> Self {
         Self {
-            guard: LEAKED_STRINGS.lock().unwrap(),
+            guard: LEAKED_STRINGS.lock(),
         }
     }
 
@@ -58,7 +59,7 @@ pub(super) struct VecLeaker<'a> {
 impl<'a> VecLeaker<'a> {
     fn acquire() -> Self {
         Self {
-            guard: LEAKED_SLICES.lock().unwrap(),
+            guard: LEAKED_SLICES.lock(),
         }
     }
 

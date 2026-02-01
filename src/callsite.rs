@@ -2,8 +2,9 @@ mod default;
 mod empty;
 mod kind;
 
-use std::sync::{LazyLock, Mutex};
+use std::sync::LazyLock;
 
+use parking_lot::Mutex;
 use pyo3::{
     Bound, Python,
     types::{PyCode, PyFrame},
@@ -63,7 +64,7 @@ pub(crate) fn get_or_init_callsite(
         CallsiteKind::from(kind.clone()),
     );
 
-    let mut callsites = CALLSITES.lock().unwrap();
+    let mut callsites = CALLSITES.lock();
 
     if callsites.len() >= 100000 {
         warn!(
