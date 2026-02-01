@@ -22,3 +22,7 @@ valuable = "0.1.1"
 [patch.crates-io]
 valuable = { path = "./valuable/valuable" }
 valuable-serde = { path = "./valuable/valuable-serde" }
+
+[profile.f]
+lto = true
+codegen-units = 1
