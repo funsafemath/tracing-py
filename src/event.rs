@@ -9,11 +9,11 @@ use tracing_core::Kind;
 use valuable::Valuable;
 
 use crate::{
-    cached::{CachedDisplay, CachedValuable, CachedValue},
+    cached::{CachedDisplay, CachedValue},
     callsite::{self, CallsiteAction},
     formatting::{
         percent::PercentFormatted,
-        valuable::{OwnedValuable, PyCachedValuable, QuotedString, UnquotedString},
+        valuable::{PyCachedValuable, QuotedString, UnquotedString},
     },
     leak::{Leaker, VecLeaker},
 };
@@ -91,10 +91,8 @@ pub(crate) fn leak_or_get_kwargs<'py>(
         let mut leaker = leaker.unwrap_or(Leaker::acquire());
 
         for (key, value) in kwargs.iter() {
-            let value: CachedValue<OwnedValuable<QuotedString>, Bound<'_, PyAny>, CachedValuable> =
-                PyCachedValuable::from(value);
             fields.push(leaker.leak_or_get(key.to_string()));
-            values.push(PyCachedValuable::from(value));
+            values.push(PyCachedValuable::<QuotedString>::from(value));
         }
     }
 
