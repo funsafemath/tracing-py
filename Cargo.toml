@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 eyre = "0.6.12"
+mimalloc = { version = "0.1.48", features = ["v3"] }
 pyo3 = { version = "0.27.2", features = ["eyre"] }
 rapidhash = { version = "4.2.1", features = ["unsafe", "nightly"] }
 tracing = { version = "0.1.44", features = ["valuable"] }
