@@ -22,7 +22,7 @@ impl<'py> CallsiteAction for SpanAction<'py> {
         self,
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<Span>,
     ) -> Option<Span> {
-        let values: Vec<_> = self
+        let values = self
             .values
             .into_iter()
             .map(PyCachedValuable::<QuotedString>::from)
