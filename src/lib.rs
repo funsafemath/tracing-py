@@ -17,6 +17,11 @@ mod template;
 
 use pyo3::prelude::*;
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 #[pymodule(name = "tracing")]
 mod tracing {
     use super::*;
