@@ -5,7 +5,7 @@ use pyo3::{
     types::{PyDict, PyDictMethods, PyTuple},
 };
 use tracing::{Event, Level, Metadata, Value, field::ValueSet};
-use tracing_core::Kind;
+use tracing_core::{Kind, callsite::DefaultCallsite};
 use valuable::Valuable;
 
 use crate::{
@@ -39,7 +39,7 @@ py_event!(py_info, "info", Level::INFO);
 py_event!(py_warn, "warn", Level::WARN);
 py_event!(py_error, "error", Level::ERROR);
 
-fn event(
+pub(crate) fn event(
     py: Python,
     level: Level,
     message: Option<Bound<'_, PyAny>>,
@@ -69,12 +69,12 @@ fn event(
     Ok(())
 }
 
-enum Message<'a, 'py> {
+pub enum Message<'a, 'py> {
     Any(Option<Bound<'py, PyAny>>),
     PercentFormatted(PercentFormatted<'a, 'py>),
 }
 
-struct EventAction<'a, 'py> {
+pub(crate) struct EventAction<'a, 'py> {
     message: Message<'a, 'py>,
     kwargs: Option<&'a Bound<'py, PyDict>>,
 }
@@ -155,4 +155,14 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     fn do_if_enabled(metadata: &'static Metadata, values: &ValueSet) -> Self::ReturnType {
         Event::dispatch(metadata, values);
     }
+}
+
+pub(crate) fn ret_eve(
+    py: Python,
+    level: Level,
+    message: Message<'_, '_>,
+    kwargs: Option<&Bound<'_, PyDict>>,
+    callsite: Option<&'static DefaultCallsite>,
+) -> Option<()> {
+    callsite::do_action(py, level, EventAction { message, kwargs }, callsite)
 }

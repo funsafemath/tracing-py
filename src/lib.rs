@@ -30,7 +30,7 @@ mod tracing {
     use level::PyLevel;
 
     #[pymodule_export]
-    use event::{py_debug, py_error, py_info, py_trace, py_warn};
+    use event::{py_debug, py_error, py_info, py_trace};
 
     #[pymodule_export]
     use layer::{
