@@ -1,6 +1,7 @@
 use std::sync::{LazyLock, Mutex, MutexGuard};
 
 use rapidhash::RapidHashSet;
+use smallvec::SmallVec;
 use tracing::warn;
 
 // todo: use rwlock to improve free-threaded performance
@@ -62,11 +63,14 @@ impl<'a> VecLeaker<'a> {
         }
     }
 
-    fn leak_vec(x: Vec<&'static str>) -> &'static [&'static str] {
+    fn leak_vec(x: SmallVec<[&'static str; 64]>) -> &'static [&'static str] {
         Box::leak(x.into_boxed_slice())
     }
 
-    pub(super) fn leak_or_get(&mut self, item: Vec<&'static str>) -> &'static [&'static str] {
+    pub(super) fn leak_or_get(
+        &mut self,
+        item: SmallVec<[&'static str; 64]>,
+    ) -> &'static [&'static str] {
         match self.guard.get(item.as_slice()) {
             Some(leaked) => leaked,
             None => {
@@ -84,7 +88,7 @@ impl<'a> VecLeaker<'a> {
         }
     }
 
-    pub(super) fn leak_or_get_once(item: Vec<&'static str>) -> &'static [&'static str] {
+    pub(super) fn leak_or_get_once(item: SmallVec<[&'static str; 64]>) -> &'static [&'static str] {
         Self::acquire().leak_or_get(item)
     }
 }

@@ -480,6 +480,7 @@ dependencies = [
  "mimalloc",
  "pyo3",
  "rapidhash",
+ "smallvec",
  "tracing",
  "tracing-appender",
  "tracing-core",
