@@ -111,7 +111,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<()>,
     ) -> Option<()> {
         let (mut fields, values) = leak_or_get_kwargs(None, self.kwargs);
-
+        return None;
         match self.message {
             Message::Any(Some(_)) | Message::PercentFormatted(_) => {
                 // todo: do not use insert

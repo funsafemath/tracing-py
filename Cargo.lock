@@ -228,6 +228,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rapidhash"
+version = "4.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d8b5b858a440a0bc02625b62dd95131b9201aa9f69f411195dd4a7cfb1de3d7"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +437,7 @@ version = "0.1.0"
 dependencies = [
  "eyre",
  "pyo3",
+ "rapidhash",
  "tracing",
  "tracing-appender",
  "tracing-core",
