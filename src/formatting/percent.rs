@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{self, Display};
 
 use pyo3::{
     Bound,
@@ -31,12 +31,12 @@ impl<'a, 'py> Display for PercentFormatted<'a, 'py> {
         // returning a fmt error panics,
         // and I can't check if arguments are valid for a given string before fmt() is called
         // (that's the point of lazy formatting)
-        write!(
+        fmt::Display::fmt(
+            &self
+                .message
+                .rem(self.args)
+                .expect("failed to format a string"),
             f,
-            "{}",
-            self.message
-                .rem(self.args,)
-                .expect("failed to format a string")
         )
     }
 }
