@@ -29,6 +29,7 @@ use crate::{
 
 // todo: impl skip/skip all
 // todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
+// todo: allow instrumenting native functions
 //
 // overhead is predominantly caused by Span::new call, so optimizing this function is not a priority
 fn instrument<'py>(
