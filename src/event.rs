@@ -4,6 +4,7 @@ use pyo3::{
     pyfunction,
     types::{PyDict, PyDictMethods, PyTuple},
 };
+use smallvec::{SmallVec, smallvec};
 use tracing::{Event, Level, Metadata, Value, field::ValueSet};
 use tracing_core::Kind;
 use valuable::Valuable;
@@ -83,9 +84,12 @@ pub(crate) fn leak_or_get_kwargs<'py>(
     // todo: accept a mut ref
     leaker: Option<Leaker>,
     kwargs: Option<&Bound<'py, PyDict>>,
-) -> (Vec<&'static str>, Vec<PyCachedValuable<'py, QuotedString>>) {
-    let mut fields = vec![];
-    let mut values = vec![];
+) -> (
+    SmallVec<[&'static str; 64]>,
+    SmallVec<[PyCachedValuable<'py, QuotedString>; 64]>,
+) {
+    let mut fields = smallvec![];
+    let mut values = smallvec![];
 
     if let Some(kwargs) = kwargs {
         let mut leaker = leaker.unwrap_or(Leaker::acquire());

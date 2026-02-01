@@ -5,6 +5,7 @@ use pyo3::{
     types::{PyDict, PyFunction, PyList, PyString, PyTuple},
 };
 use rapidhash::RapidHashMap;
+use smallvec::smallvec;
 
 use crate::{
     imports::get_inspect_signature,
@@ -156,7 +157,7 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
         .map_err(|x| PyTypeError::new_err(x.to_string()))?;
     let params = signature.parameters();
 
-    let mut param_names = Vec::new();
+    let mut param_names = smallvec![];
     let mut leaker = Leaker::acquire();
     let mut pos_only = 0;
     let mut pos_or_kw = 0;
