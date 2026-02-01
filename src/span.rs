@@ -4,8 +4,9 @@ use tracing_core::{Kind, callsite::DefaultCallsite};
 use valuable::Valuable;
 
 use crate::{
+    cached::{CachedDisplay, CachedValuable, CachedValue},
     callsite::{self, CallsiteAction},
-    formatting::valuable::PyCachedValuable,
+    formatting::test_valuable::{PyCachedValuable, QuotedString},
 };
 
 struct SpanAction<'py> {
@@ -25,10 +26,9 @@ impl<'py> CallsiteAction for SpanAction<'py> {
         let values: Vec<_> = self
             .values
             .into_iter()
-            .map(PyCachedValuable::from)
-            .collect();
+            .map(PyCachedValuable::<QuotedString>::from)
+            .collect::<Vec<_>>();
 
-        // this vector seems unnecessary
         let values = values
             .iter()
             .map(|x| x as &dyn Valuable)
