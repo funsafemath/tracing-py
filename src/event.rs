@@ -133,13 +133,6 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
             .map(|x| Some(x as &dyn Value))
             .collect::<Vec<_>>();
 
-        // format subscriber formats message=Value::String("text") as "text" instead of text, so fmt::Arguments is used
-        // todo: use valuable if message is a list/dict/bool/int/float/null
-        // also should I cache the Display? not sure if the performance boost has more impact than the memory allocation overhead
-        // though it's probably possible to cached the value only if there's more than 1 active layer,
-        // that's more efficient
-        // todo: rework this and the valuable module
-
         match self.message {
             Message::Any(None) => f(fields, &values),
             Message::Any(Some(message)) => {

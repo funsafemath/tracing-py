@@ -34,6 +34,7 @@ impl StrFmt for UnquotedString {
 pub(crate) type PyCachedValuable<'py, S> =
     CachedValue<OwnedValuable<S>, Bound<'py, PyAny>, CachedValuable>;
 
+// todo: add list/dict here
 pub(crate) enum OwnedValuable<S: StrFmt> {
     SmallInt(i128),
     Float(f64),

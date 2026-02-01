@@ -53,7 +53,5 @@ pub(crate) fn span(
     values: Vec<Bound<'_, PyAny>>,
     callsite: &'static DefaultCallsite,
 ) -> Option<Span> {
-    // todo: rn the callsite is created from the current stack frame, which is wrong
-    // i want to implement spans for async function/generators first, then i'll fix this
     callsite::do_action(py, level, SpanAction { fields, values }, Some(callsite))
 }
