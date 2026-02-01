@@ -1,13 +1,11 @@
-use std::{
-    collections::HashSet,
-    sync::{LazyLock, Mutex, MutexGuard},
-};
+use std::sync::{LazyLock, Mutex, MutexGuard};
 
+use rapidhash::RapidHashSet;
 use tracing::warn;
 
 // todo: use rwlock to improve free-threaded performance
-static LEAKED_STRINGS: LazyLock<Mutex<HashSet<&'static str>>> = LazyLock::new(Mutex::default);
-static LEAKED_SLICES: LazyLock<Mutex<HashSet<&'static [&'static str]>>> =
+static LEAKED_STRINGS: LazyLock<Mutex<RapidHashSet<&'static str>>> = LazyLock::new(Mutex::default);
+static LEAKED_SLICES: LazyLock<Mutex<RapidHashSet<&'static [&'static str]>>> =
     LazyLock::new(Mutex::default);
 
 pub(super) fn leak<T>(x: T) -> &'static T {
@@ -16,7 +14,7 @@ pub(super) fn leak<T>(x: T) -> &'static T {
 
 // todo: generalize these structs
 pub(super) struct Leaker<'a> {
-    guard: MutexGuard<'a, HashSet<&'static str>>,
+    guard: MutexGuard<'a, RapidHashSet<&'static str>>,
 }
 
 impl<'a> Leaker<'a> {
@@ -54,7 +52,7 @@ impl<'a> Leaker<'a> {
 }
 
 pub(super) struct VecLeaker<'a> {
-    guard: MutexGuard<'a, HashSet<&'static [&'static str]>>,
+    guard: MutexGuard<'a, RapidHashSet<&'static [&'static str]>>,
 }
 
 impl<'a> VecLeaker<'a> {

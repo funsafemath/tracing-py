@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use eyre::{ContextCompat, bail, eyre};
 use pyo3::{
     exceptions::PyTypeError,
     prelude::*,
     types::{PyDict, PyFunction, PyList, PyString, PyTuple},
 };
+use rapidhash::RapidHashMap;
 
 use crate::{
     imports::get_inspect_signature,
@@ -23,7 +22,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct Signature {
     param_names: &'static [&'static str],
-    kwarg_to_index: HashMap<&'static str, usize>,
+    kwarg_to_index: RapidHashMap<&'static str, usize>,
     has_excess_args: bool,
     has_excess_kwargs: bool,
     pos_only: usize,
@@ -164,7 +163,7 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
     let mut kw_only = 0;
     let mut has_excess_args = false;
     let mut has_excess_kwargs = false;
-    let mut kwarg_to_index = HashMap::default();
+    let mut kwarg_to_index = RapidHashMap::default();
     let mut defaults = Vec::new();
 
     for (i, param_tuple) in params.items()?.into_iter().enumerate() {
