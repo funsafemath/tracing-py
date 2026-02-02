@@ -6,7 +6,7 @@ use crate::{
 
 mk_imported_type!(PyParameter, "inspect", "Parameter");
 
-pub(crate) trait PyParameterMethods<'py> {
+pub trait PyParameterMethods<'py> {
     fn kind(&self) -> ParamKind;
 }
 
@@ -17,7 +17,7 @@ impl<'py> PyParameterMethods<'py> for Bound<'py, PyParameter> {
 }
 
 #[derive(Debug)]
-pub(crate) enum ParamKind {
+pub enum ParamKind {
     PositionalOnly,
     PositionalOrKeyword,
     ExcessArgs,
