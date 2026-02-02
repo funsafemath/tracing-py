@@ -179,12 +179,22 @@ def instrument(
     level: Level | None = None,
     skip: Sequence[str] | None = None,
     skip_all: bool | None = None,
+    ret: bool | None = None,
+    ret_err_only: bool | None = None,
+    no_yield: bool | None = None,
 ) -> Callable[[T], T]: ...
 @overload
-
-# looks like pycharm's built-in language server isn't intelligent enough
-# to understand that instrument(F) accepts same arguments as F, use `ty` or `Pyright`
-def instrument(func: T) -> T: ...
+def instrument(
+    func: T,
+    /,
+    *,
+    level: Level | None = None,
+    skip: Sequence[str] | None = None,
+    skip_all: bool | None = None,
+    ret: bool | None = None,
+    ret_err_only: bool | None = None,
+    no_yield: bool | None = None,
+) -> T: ...
 
 __all__ = [
     "init",
