@@ -2,20 +2,35 @@ use pyo3::{IntoPyObjectExt, prelude::*, types::PyType};
 use tracing::Span;
 
 use crate::{
-    imports::get_coroutine_type, infallible_attr, instrument::generator::InstrumentedGenerator,
+    event::{ErrCallsite, RetCallsite, YieldCallsite},
+    imports::get_coroutine_type,
+    infallible_attr,
+    instrument::generator::InstrumentedGenerator,
 };
 
 #[pyclass]
 pub(crate) struct InstrumentedCoroutine {
     inner: Py<PyAny>,
     span: Span,
+    ret_callsite: Option<RetCallsite>,
+    err_callsite: Option<ErrCallsite>,
+    yield_callsite: Option<YieldCallsite>,
 }
 
 impl InstrumentedCoroutine {
-    pub(crate) fn new(coroutine: Py<PyAny>, span: Span) -> Self {
+    pub(crate) fn new(
+        coroutine: Py<PyAny>,
+        span: Span,
+        ret_callsite: Option<RetCallsite>,
+        err_callsite: Option<ErrCallsite>,
+        yield_callsite: Option<YieldCallsite>,
+    ) -> Self {
         Self {
             inner: coroutine,
             span,
+            ret_callsite,
+            err_callsite,
+            yield_callsite,
         }
     }
 }
@@ -43,11 +58,15 @@ impl InstrumentedCoroutine {
 
     fn __await__<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
         let generator = infallible_attr!(self.inner, "__await__", py).call0()?;
-        Ok(
-            InstrumentedGenerator::new(generator.unbind(), self.span.clone())
-                .into_py_any(py)
-                .unwrap(),
+        Ok(InstrumentedGenerator::new(
+            generator.unbind(),
+            self.span.clone(),
+            self.ret_callsite,
+            self.err_callsite,
+            self.yield_callsite,
         )
+        .into_py_any(py)
+        .unwrap())
     }
 
     #[getter]
