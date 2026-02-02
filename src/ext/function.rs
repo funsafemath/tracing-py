@@ -7,7 +7,7 @@ use pyo3::{
 // there's no PyFunctionMethods in pyo3, but ext a better name imo
 //
 // who thought allowing changing function defaults at runtime is a good idea?
-pub(crate) trait PyFunctionMethodsExt<'py> {
+pub trait PyFunctionMethodsExt<'py> {
     fn get_defaults(&self) -> Option<Bound<'py, PyTuple>>;
     fn get_kw_defaults(&self) -> Option<Bound<'py, PyDict>>;
     fn code(&self) -> Bound<'py, PyCode>;
