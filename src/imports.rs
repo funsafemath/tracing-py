@@ -15,6 +15,12 @@ pub macro mk_import($fn_name:ident, $module:expr, $item:expr, $type:ty) {
 
 mk_import!(get_generator_type, "types", "GeneratorType", PyType);
 mk_import!(get_coroutine_type, "types", "CoroutineType", PyType);
+mk_import!(
+    get_async_generator_type,
+    "types",
+    "AsyncGeneratorType",
+    PyType
+);
 
 mk_import!(get_inspect_signature, "inspect", "signature", PyFunction);
 mk_import!(get_inspect_parameter_type, "inspect", "Parameter", PyType);
