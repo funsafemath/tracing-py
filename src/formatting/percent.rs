@@ -13,13 +13,13 @@ use pyo3::{
 // as type-checker will complain that obj2 is not a tuple.
 // todo: should percent formatting be moved to a submodule and be accessible like tracing.legacy.function?
 // That'll reduce the number possible mistakes and also allow to use *args to log multiple arbitrary objects
-pub(crate) struct PercentFormatted<'a, 'py> {
+pub struct PercentFormatted<'a, 'py> {
     message: Bound<'py, PyString>,
     args: &'a Bound<'py, PyTuple>,
 }
 
 impl<'a, 'py> PercentFormatted<'a, 'py> {
-    pub(crate) fn new(message: Bound<'py, PyString>, args: &'a Bound<'py, PyTuple>) -> Self {
+    pub fn new(message: Bound<'py, PyString>, args: &'a Bound<'py, PyTuple>) -> Self {
         Self { message, args }
     }
 }
