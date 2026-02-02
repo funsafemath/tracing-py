@@ -3,8 +3,8 @@ use tracing::Span;
 
 use crate::{
     event::{self, ErrCallsite, RetCallsite, YieldCallsite},
+    ext::any::infallible_attr,
     imports::get_generator_type,
-    infallible_attr,
 };
 
 // todo: impl all generator methods, use proper inner type
