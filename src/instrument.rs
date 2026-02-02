@@ -1,4 +1,5 @@
-pub mod coroutine;
+mod async_generator;
+mod coroutine;
 mod generator;
 mod parameter;
 mod py_signature;
