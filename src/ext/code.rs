@@ -3,7 +3,7 @@ use pyo3::{
     types::{PyBytes, PyCode, PyString},
 };
 
-use crate::infallible_attr;
+use crate::ext::any::infallible_attr;
 
 pub(crate) trait PyCodeMethodsExt<'py> {
     fn filename(&self) -> Bound<'py, PyString>;
