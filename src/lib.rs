@@ -1,6 +1,11 @@
 #![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
 #![feature(decl_macro)]
+#![deny(clippy::perf)]
+#![warn(clippy::trivially_copy_pass_by_ref)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::ptr_arg)]
 
 mod cached;
 mod callsite;
@@ -35,8 +40,7 @@ mod tracing {
 
     #[pymodule_export]
     use super::layer::{
-        FmtLayer, Format,
-        fmt::{NonBlocking, PyLogFile, span::PyFmtSpan},
+        fmt::{FmtLayer, Format, NonBlocking, PyLogFile, span::PyFmtSpan},
         py_init,
     };
 

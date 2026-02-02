@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub(crate) enum Context<'py> {
+pub enum Context<'py> {
     FromThreadState(Python<'py>),
     FrameAndCode {
         frame: Bound<'py, PyFrame>,
@@ -41,7 +41,7 @@ impl<'py> Context<'py> {
     }
 }
 
-pub(crate) fn get_or_init_callsite(
+pub fn get_or_init_callsite(
     ctx: Context<'_>,
     level: Level,
     fields: &'static [&'static str],
@@ -77,7 +77,7 @@ pub(crate) fn get_or_init_callsite(
         .entry(identifier.clone())
         .or_insert_with(|| default::new_callsite((frame, code), identifier))
 }
-pub(crate) trait CallsiteAction {
+pub trait CallsiteAction {
     const KIND: Kind;
     type ReturnType;
 
@@ -98,7 +98,7 @@ fn is_callsite_enabled(callsite: &'static DefaultCallsite) -> bool {
 
 // todo: callsite already has it's own level, so passing both level and callsite is meaningless
 // also, if callsite is known, we don't need fields, so with_values function should be added
-pub(crate) fn do_action<A: CallsiteAction>(
+pub fn do_action<A: CallsiteAction>(
     py: Python,
     level: Level,
     action: A,

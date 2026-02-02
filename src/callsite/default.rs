@@ -19,7 +19,7 @@ use crate::{
 // since i can't make python code use only a single event level or constast fields
 // filename, module name and line number hopefully stay constant
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
-pub(crate) struct CallsiteIdentifier {
+pub struct CallsiteIdentifier {
     address: usize,
     level: Level,
     fields: &'static [&'static str],
@@ -27,7 +27,7 @@ pub(crate) struct CallsiteIdentifier {
 }
 
 impl CallsiteIdentifier {
-    pub(super) fn new(
+    pub fn new(
         address: usize,
         level: Level,
         fields: &'static [&'static str],
@@ -42,7 +42,7 @@ impl CallsiteIdentifier {
     }
 }
 
-pub(super) fn new_callsite(
+pub fn new_callsite(
     (frame, code): (Bound<'_, PyFrame>, Bound<'_, PyCode>),
     CallsiteIdentifier {
         level,

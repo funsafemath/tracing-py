@@ -1,4 +1,4 @@
-pub(super) mod coroutine;
+pub mod coroutine;
 mod generator;
 mod parameter;
 mod py_signature;
@@ -306,7 +306,7 @@ impl RetLog {
     clippy::too_many_arguments,
     reason = "no it's not enough for an average python function"
 )]
-pub(crate) fn py_instrument<'py>(
+pub fn py_instrument<'py>(
     py: Python<'py>,
     func: Option<Bound<'py, PyFunction>>,
     level: PyLevel,

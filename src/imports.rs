@@ -5,8 +5,8 @@ use pyo3::{
     types::{PyCFunction, PyFunction, PyType},
 };
 
-pub(crate) macro mk_import($fn_name:ident, $module:expr, $item:expr, $type:ty) {
-    pub(crate) fn $fn_name(py: Python<'_>) -> &Bound<'_, $type> {
+pub macro mk_import($fn_name:ident, $module:expr, $item:expr, $type:ty) {
+    pub fn $fn_name(py: Python<'_>) -> &Bound<'_, $type> {
         static LOCK: PyOnceLock<Py<$type>> = PyOnceLock::new();
 
         get_or_import(py, &LOCK, $module, $item)
@@ -21,7 +21,7 @@ mk_import!(get_inspect_parameter_type, "inspect", "Parameter", PyType);
 
 mk_import!(get_atexit_register, "atexit", "register", PyCFunction);
 
-pub(crate) fn get_or_import<'py, 'a, T: PyTypeCheck>(
+pub fn get_or_import<'py, 'a, T: PyTypeCheck>(
     py: Python<'py>,
     lock: &'a PyOnceLock<Py<T>>,
     module: &'static str,
