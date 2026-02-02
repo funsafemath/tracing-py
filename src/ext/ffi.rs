@@ -6,7 +6,7 @@ use pyo3::{ffi, prelude::*};
 
 /// Returns Ok if the error code is not -1.
 #[inline]
-pub(crate) fn error_on_minusone(py: Python<'_>, result: c_int) -> PyResult<()> {
+pub fn error_on_minusone(py: Python<'_>, result: c_int) -> PyResult<()> {
     if result == -1 {
         Err(PyErr::fetch(py))
     } else {
@@ -14,7 +14,7 @@ pub(crate) fn error_on_minusone(py: Python<'_>, result: c_int) -> PyResult<()> {
     }
 }
 
-pub(crate) trait FfiPtrExt {
+pub trait FfiPtrExt {
     /// Assumes this pointer carries a Python reference which needs to be decref'd.
     ///
     /// If the pointer is NULL, this function will fetch an error.

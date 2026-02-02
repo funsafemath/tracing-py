@@ -9,7 +9,7 @@ use crate::{
 
 // todo: impl all generator methods, use proper inner type
 #[pyclass]
-pub(crate) struct InstrumentedGenerator {
+pub struct InstrumentedGenerator {
     inner: Py<PyAny>,
     span: Span,
     ret_callsite: Option<RetCallsite>,
@@ -18,7 +18,7 @@ pub(crate) struct InstrumentedGenerator {
 }
 
 impl InstrumentedGenerator {
-    pub(crate) fn new(
+    pub fn new(
         inner: Py<PyAny>,
         span: Span,
         ret_callsite: Option<RetCallsite>,

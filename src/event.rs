@@ -25,7 +25,7 @@ macro_rules! py_event {
     ($fn_name:ident, $py_name:literal, $lvl:expr) => {
         #[pyfunction(name = $py_name)]
         #[pyo3(signature = (message = None, fmt_args = None, **kwargs))]
-        pub(crate) fn $fn_name(
+        pub fn $fn_name(
             py: Python<'_>,
             message: Option<Bound<'_, PyAny>>,
             fmt_args: Option<&Bound<'_, PyTuple>>,
@@ -82,7 +82,7 @@ struct EventAction<'a, 'py> {
     kwargs: Option<&'a Bound<'py, PyDict>>,
 }
 
-pub(crate) fn leak_or_get_kwargs<'py>(
+pub fn leak_or_get_kwargs<'py>(
     // todo: accept a mut ref
     leaker: Option<Leaker>,
     kwargs: Option<&Bound<'py, PyDict>>,
@@ -165,7 +165,7 @@ impl CallsiteAction for EventAction<'_, '_> {
 
 macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field:literal) {
     #[derive(Clone, Copy, Debug)]
-    pub(crate) struct $struct(&'static DefaultCallsite);
+    pub struct $struct(&'static DefaultCallsite);
 
     struct Action<'py>(Bound<'py, PyAny>);
 
@@ -192,7 +192,7 @@ macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field
         }
     }
 
-    pub(crate) fn $fn_create(context: Context, level: Level) -> $struct {
+    pub fn $fn_create(context: Context, level: Level) -> $struct {
         $struct(callsite::get_or_init_callsite(
             context,
             level,
@@ -201,7 +201,7 @@ macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field
         ))
     }
 
-    pub(crate) fn $fn_emit(
+    pub fn $fn_emit(
         py: Python,
         value: Bound<'_, PyAny>,
         callsite: $struct,
