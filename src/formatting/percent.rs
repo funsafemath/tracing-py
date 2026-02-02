@@ -25,7 +25,7 @@ impl<'a, 'py> PercentFormatted<'a, 'py> {
 }
 
 // todo: PyUnicode_Format may be a bit faster, rewrite this function using it if you have nothing better to do
-impl<'a, 'py> Display for PercentFormatted<'a, 'py> {
+impl Display for PercentFormatted<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Is there any way to gracefully handle the error?
         // returning a fmt error panics,

@@ -51,10 +51,7 @@ impl<'py> PyAnyMethodsExt<'py> for Bound<'py, PyAny> {
         // https://docs.python.org/3/c-api/object.html#c.PyObject_Format:
         // "format_spec may be NULL. In this case the call is equivalent to format(obj).
         // Returns the formatted string on success, NULL on failure.""
-        let format_spec = match format_spec {
-            Some(str) => str.as_ptr(),
-            None => ptr::null_mut(),
-        };
+        let format_spec = format_spec.map_or_else(ptr::null_mut, |str| str.as_ptr());
 
         unsafe {
             ffi::PyObject_Format(self.as_ptr(), format_spec)

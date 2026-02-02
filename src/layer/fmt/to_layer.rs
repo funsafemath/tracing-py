@@ -24,7 +24,7 @@ pub(crate) trait ToDynLayer {
     fn dyn_layer(&self) -> PyResult<(Box<dyn ThreadSafeLayer>, Option<WorkerGuard>)>;
 }
 
-impl<'py> ToDynLayer for Bound<'py, FmtLayer> {
+impl ToDynLayer for Bound<'_, FmtLayer> {
     fn dyn_layer(&self) -> PyResult<(Box<dyn ThreadSafeLayer>, Option<WorkerGuard>)> {
         let FmtLayer {
             log_level,
@@ -180,76 +180,67 @@ where
     let mut opts = OpenOptions::new();
     let opts = opts.create(true).append(true);
 
-    Ok(match nonblocking {
-        Some(nonblocking) => {
-            let builder = NonBlockingBuilder::default();
-            let builder = match nonblocking {
-                NonBlocking::Lossy => builder.lossy(true),
-                NonBlocking::Complete => builder.lossy(false),
-            };
+    Ok(if let Some(nonblocking) = nonblocking {
+        let builder = NonBlockingBuilder::default();
+        let builder = match nonblocking {
+            NonBlocking::Lossy => builder.lossy(true),
+            NonBlocking::Complete => builder.lossy(false),
+        };
 
-            let (writer, guard) = match file {
-                LogFile::Stdout => {
-                    let (writer, guard) = builder.finish(stdout());
-                    (
-                        set_without_time_and_rest(
-                            layer.with_writer(writer),
-                            level,
-                            format,
-                            without_time,
-                        ),
-                        guard,
-                    )
-                }
-                LogFile::Stderr => {
-                    let (writer, guard) = builder.finish(stderr());
-                    (
-                        set_without_time_and_rest(
-                            layer.with_writer(writer),
-                            level,
-                            format,
-                            without_time,
-                        ),
-                        guard,
-                    )
-                }
-                LogFile::Path(path) => {
-                    let file = opts.open(path)?;
-                    let (writer, guard) = builder.finish(file);
-                    (
-                        set_without_time_and_rest(
-                            layer.with_writer(writer),
-                            level,
-                            format,
-                            without_time,
-                        ),
-                        guard,
-                    )
-                }
-            };
-            (writer, Some(guard))
-        }
-        None => {
-            let writer = match file {
-                LogFile::Stdout => set_without_time_and_rest(
-                    layer.with_writer(stdout),
-                    level,
-                    format,
-                    without_time,
-                ),
-                LogFile::Stderr => set_without_time_and_rest(
-                    layer.with_writer(stderr),
-                    level,
-                    format,
-                    without_time,
-                ),
-                LogFile::Path(path) => {
-                    let file = opts.open(path)?;
-                    set_without_time_and_rest(layer.with_writer(file), level, format, without_time)
-                }
-            };
-            (writer, None)
-        }
+        let (writer, guard) = match file {
+            LogFile::Stdout => {
+                let (writer, guard) = builder.finish(stdout());
+                (
+                    set_without_time_and_rest(
+                        layer.with_writer(writer),
+                        level,
+                        format,
+                        without_time,
+                    ),
+                    guard,
+                )
+            }
+            LogFile::Stderr => {
+                let (writer, guard) = builder.finish(stderr());
+                (
+                    set_without_time_and_rest(
+                        layer.with_writer(writer),
+                        level,
+                        format,
+                        without_time,
+                    ),
+                    guard,
+                )
+            }
+            LogFile::Path(path) => {
+                let file = opts.open(path)?;
+                let (writer, guard) = builder.finish(file);
+                (
+                    set_without_time_and_rest(
+                        layer.with_writer(writer),
+                        level,
+                        format,
+                        without_time,
+                    ),
+                    guard,
+                )
+            }
+        };
+        (writer, Some(guard))
+    } else {
+        let writer = match file {
+            LogFile::Stdout => {
+                set_without_time_and_rest(layer.with_writer(stdout), level, format, without_time)
+            }
+            LogFile::Stderr => {
+                set_without_time_and_rest(layer.with_writer(stderr), level, format, without_time)
+            }
+            LogFile::Path(path) => {
+                let file = opts.open(path)?;
+                set_without_time_and_rest(layer.with_writer(file), level, format, without_time)
+            }
+        };
+        (writer, None)
     })
 }
 // todo: rewrite functions above using macros

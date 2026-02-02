@@ -30,11 +30,11 @@ impl PyLevel {
 impl From<PyLevel> for tracing::Level {
     fn from(value: PyLevel) -> Self {
         match value {
-            PyLevel::Trace => Level::TRACE,
-            PyLevel::Debug => Level::DEBUG,
-            PyLevel::Info => Level::INFO,
-            PyLevel::Warn => Level::WARN,
-            PyLevel::Error => Level::ERROR,
+            PyLevel::Trace => Self::TRACE,
+            PyLevel::Debug => Self::DEBUG,
+            PyLevel::Info => Self::INFO,
+            PyLevel::Warn => Self::WARN,
+            PyLevel::Error => Self::ERROR,
         }
     }
 }

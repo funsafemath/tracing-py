@@ -59,8 +59,8 @@ impl Signature {
                 == self.pos_only
                     + self.pos_or_kw
                     + self.kw_only
-                    + self.has_excess_args as usize
-                    + self.has_excess_kwargs as usize
+                    + usize::from(self.has_excess_args)
+                    + usize::from(self.has_excess_kwargs)
         );
 
         let mut bound_args: Vec<Option<Bound<'py, PyAny>>> = vec![None; self.param_names.len()];
@@ -149,7 +149,7 @@ impl Signature {
 
 // todo: don't use inspect
 // inspect.signature is actually not that slow for non-native functions, and we call it only once per instrumented function
-pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<Signature> {
+pub(crate) fn extract_signature(func: &Bound<'_, PyFunction>) -> PyResult<Signature> {
     let signature = get_inspect_signature(func.py())
         .call1((func,))?
         .cast_into()
@@ -185,6 +185,7 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
         }
         param_names.push(param_name);
     }
+    drop(leaker);
     let param_names = VecLeaker::leak_or_get_once(param_names);
 
     Ok(Signature {
