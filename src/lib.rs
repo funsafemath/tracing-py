@@ -1,5 +1,6 @@
 #![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
+#![feature(decl_macro)]
 
 mod cached;
 mod callsite;
@@ -12,6 +13,7 @@ mod introspect;
 mod layer;
 mod leak;
 mod level;
+mod py_type;
 mod span;
 mod template;
 
