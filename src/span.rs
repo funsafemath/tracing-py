@@ -5,7 +5,7 @@ use valuable::Valuable;
 
 use crate::{
     callsite::{self, CallsiteAction},
-    formatting::valuable::{PyCachedValuable, QuotedString},
+    formatting::valuable::{PyCachedValuable, QuoteStrAndTmpl, TemplateRepr},
 };
 
 struct SpanAction<'py> {
@@ -25,7 +25,7 @@ impl<'py> CallsiteAction for SpanAction<'py> {
         let values = self
             .values
             .into_iter()
-            .map(PyCachedValuable::<QuotedString>::from)
+            .map(PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from)
             .collect::<Vec<_>>();
 
         let values = values

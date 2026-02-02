@@ -18,31 +18,12 @@ unsafe impl PyTypeInfo for PyParameter {
 
 pub(crate) trait PyParameterMethods<'py> {
     fn kind(&self) -> ParamKind;
-    fn has_default(&self) -> bool;
 }
 
 impl<'py> PyParameterMethods<'py> for Bound<'py, PyParameter> {
     fn kind(&self) -> ParamKind {
         ParamKind::maybe_from(infallible_attr!(self, "kind")).unwrap()
     }
-
-    fn has_default(&self) -> bool {
-        // funnily enough, if a function specifies inspect.Parameter.empty as the default parameter value,
-        // inspect's functions will treat it as if there is no default parameter
-        // todo: fix it??
-        // also it breaks the invariant that required parameters can follow optional ones (inspect doesn't validate it)
-        !infallible_attr!(self, "default").is(empty_default(self.py()))
-    }
-}
-
-fn empty_default(py: Python<'_>) -> &Bound<'_, PyAny> {
-    static EMPTY_DEFAULT: PyOnceLock<Py<PyAny>> = PyOnceLock::new();
-
-    EMPTY_DEFAULT
-        .get_or_init(py, || {
-            infallible_attr!(get_inspect_parameter_type(py), "empty").unbind()
-        })
-        .bind(py)
 }
 
 #[derive(Debug)]

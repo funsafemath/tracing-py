@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use pyo3::{
     prelude::*,
-    types::{PyBool, PyFloat, PyInt},
+    types::{PyBool, PyFloat, PyInt, PyString},
 };
 use valuable::{Valuable, Value};
 
@@ -13,44 +13,75 @@ use crate::{
 };
 
 pub(crate) trait StrFmt {
-    fn make(str: &str) -> Value<'_>;
+    fn make<T: TemplateFmt>(string: String) -> OwnedValuable<Self, T>
+    where
+        Self: Sized;
 }
 
-pub(crate) enum QuotedString {}
-pub(crate) enum UnquotedString {}
+pub(crate) enum QuoteStrAndTmpl {}
+pub(crate) enum NeverQuote {}
 
-impl StrFmt for QuotedString {
-    fn make(str: &str) -> Value<'_> {
-        Value::String(str)
+impl StrFmt for QuoteStrAndTmpl {
+    fn make<T: TemplateFmt>(str: String) -> OwnedValuable<Self, T> {
+        OwnedValuable::Str(str, PhantomData, PhantomData)
     }
 }
 
-impl StrFmt for UnquotedString {
-    fn make(str: &str) -> Value<'_> {
-        Value::UnquotedString(str)
+impl StrFmt for NeverQuote {
+    fn make<T: TemplateFmt>(string: String) -> OwnedValuable<Self, T> {
+        OwnedValuable::UnquotedStr(string, PhantomData)
     }
 }
 
-pub(crate) type PyCachedValuable<'py, S> =
-    CachedValue<OwnedValuable<S>, Bound<'py, PyAny>, CachedValuable>;
+pub(crate) trait TemplateFmt {
+    fn make<S: StrFmt>(template: &Bound<'_, PyTemplate>) -> OwnedValuable<S, Self>
+    where
+        Self: Sized;
+}
+
+pub(crate) enum TemplateInterpolate {}
+pub(crate) enum TemplateRepr {}
+
+impl TemplateFmt for TemplateInterpolate {
+    fn make<S: StrFmt>(template: &Bound<'_, PyTemplate>) -> OwnedValuable<S, Self>
+    where
+        Self: Sized,
+    {
+        S::make(template.format())
+    }
+}
+
+impl TemplateFmt for TemplateRepr {
+    fn make<S>(template: &Bound<'_, PyTemplate>) -> OwnedValuable<S, Self>
+    where
+        Self: Sized,
+    {
+        OwnedValuable::UnquotedStr::<S, Self>(template.to_string(), PhantomData)
+    }
+}
+
+pub(crate) type PyCachedValuable<'py, S, T> =
+    CachedValue<OwnedValuable<S, T>, Bound<'py, PyAny>, CachedValuable>;
 
 // todo: add list/dict here
-pub(crate) enum OwnedValuable<S: StrFmt> {
+pub(crate) enum OwnedValuable<S, T> {
     SmallInt(i128),
     Float(f64),
     Bool(bool),
     None,
-    Str(String, PhantomData<S>),
+    Str(String, PhantomData<S>, PhantomData<T>),
+    UnquotedStr(String, PhantomData<T>),
 }
 
-impl<S: StrFmt> Valuable for OwnedValuable<S> {
+impl<S: StrFmt, T: TemplateFmt> Valuable for OwnedValuable<S, T> {
     fn as_value(&self) -> Value<'_> {
         match self {
             Self::SmallInt(int) => Value::I128(*int),
             Self::Float(float) => Value::F64(*float),
             Self::Bool(bool) => Value::Bool(*bool),
             Self::None => Value::Unit,
-            Self::Str(str, _) => S::make(str),
+            Self::Str(str, _, _) => Value::String(str),
+            Self::UnquotedStr(str, _) => Value::UnquotedString(str),
         }
     }
 
@@ -60,8 +91,12 @@ impl<S: StrFmt> Valuable for OwnedValuable<S> {
 }
 
 // deferring any type checks until the value is required, so we don't waste time on filtered events
-impl<'py, S: StrFmt> GetValue<OwnedValuable<S>, CachedValuable> for Bound<'py, PyAny> {
-    fn value(&self) -> OwnedValuable<S> {
+// should we use cast instead of cast_exact? not sure if anyone subclasses primitives
+// maybe always use an UnquotedString, and use repr/str as the generic paramter instead?
+impl<'py, S: StrFmt, T: TemplateFmt> GetValue<OwnedValuable<S, T>, CachedValuable>
+    for Bound<'py, PyAny>
+{
+    fn value(&self) -> OwnedValuable<S, T> {
         if self.is_none() {
             OwnedValuable::None
         } else if let Ok(int) = self.cast_exact::<PyInt>()
@@ -76,9 +111,23 @@ impl<'py, S: StrFmt> GetValue<OwnedValuable<S>, CachedValuable> for Bound<'py, P
         } else if let Ok(bool) = self.cast_exact::<PyBool>() {
             OwnedValuable::Bool(bool.is_true())
         } else if let Ok(tmpl) = self.cast_exact::<PyTemplate>() {
-            OwnedValuable::<S>::Str(tmpl.format(), PhantomData)
+            T::make(tmpl)
+        } else if let Ok(str) = self.cast_exact::<PyString>() {
+            S::make(str.to_string())
         } else {
-            OwnedValuable::<S>::Str(self.to_string(), PhantomData)
+            OwnedValuable::<S, T>::UnquotedStr(python_format(self, self.repr()), PhantomData)
         }
+    }
+}
+
+fn python_format(any: &Bound<'_, PyAny>, format_result: PyResult<Bound<'_, PyString>>) -> String {
+    match format_result {
+        Result::Ok(s) => return s.to_string_lossy().to_string(),
+        Result::Err(err) => err.write_unraisable(any.py(), Some(any)),
+    }
+
+    match any.get_type().name() {
+        Result::Ok(name) => format!("<unprintable {name} object>"),
+        Result::Err(_) => "<unprintable object>".to_owned(),
     }
 }
