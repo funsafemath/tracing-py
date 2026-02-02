@@ -330,7 +330,7 @@ pub(crate) fn py_instrument<'py>(
     };
 
     match func {
-        Some(func) => instrument(py, func, InstrumentOptions::default()),
+        Some(func) => instrument(py, func, options),
         None => options.into_bound_py_any(py),
     }
 }
