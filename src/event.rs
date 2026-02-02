@@ -167,10 +167,7 @@ macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_nam
     #[derive(Clone, Copy, Debug)]
     pub(crate) struct $struct_name(&'static DefaultCallsite);
 
-    struct Action<'py> {
-        value: Bound<'py, PyAny>,
-        callsite: $struct_name,
-    }
+    struct Action<'py>(Bound<'py, PyAny>);
 
     static FIELDS: &[&str] = &[$field];
 
@@ -186,7 +183,7 @@ macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_nam
                 &[Option<&dyn Value>],
             ) -> Option<Self::ReturnType>,
         ) -> Option<Self::ReturnType> {
-            let value = PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from(self.value);
+            let value = PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from(self.0);
             f(FIELDS, &[Some(&(&value as &dyn Valuable) as &dyn Value)])
         }
 
@@ -212,7 +209,7 @@ macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_nam
         callsite::do_action(
             py,
             callsite.0.metadata().level().to_owned(),
-            Action { value, callsite },
+            Action(value),
             Some(callsite.0),
         )
     }
