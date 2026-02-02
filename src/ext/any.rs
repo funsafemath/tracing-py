@@ -4,20 +4,19 @@ use pyo3::{ffi, prelude::*, types::PyString};
 
 use crate::ext::ffi::FfiPtrExt;
 
-#[macro_export]
-macro_rules! infallible_attr {
+pub(crate) macro infallible_attr {
     ($obj:expr, $attr:expr) => {
         ::pyo3::prelude::PyAnyMethods::getattr($obj.as_any(), ::pyo3::intern!($obj.py(), $attr))
             .unwrap()
             .cast_into()
             .unwrap()
-    };
+    },
     ($obj:expr, $attr:expr, $py:expr) => {
         ::pyo3::prelude::PyAnyMethods::getattr($obj.bind($py).as_any(), ::pyo3::intern!($py, $attr))
             .unwrap()
             .cast_into()
             .unwrap()
-    };
+    }
 }
 
 // copied from pyo3 src/py_result_ext.rs
