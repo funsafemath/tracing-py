@@ -163,7 +163,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     }
 }
 
-macro single_field_event($mod:ident, $struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) {
+macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) {
     #[derive(Clone, Copy, Debug)]
     pub(crate) struct $struct_name(&'static DefaultCallsite);
 
@@ -218,18 +218,6 @@ macro single_field_event($mod:ident, $struct_name:ident, $fn_create_name:ident, 
     }
 }
 
-single_field_event!(ret_callsite, RetCallsite, ret_callsite, ret_event, "return");
-single_field_event!(
-    err_callsite,
-    ErrCallsite,
-    err_callsite,
-    err_event,
-    "exception"
-);
-single_field_event!(
-    yield_callsite,
-    YieldCallsite,
-    yield_callsite,
-    yield_event,
-    "yield"
-);
+single_field_event!(RetCallsite, ret_callsite, ret_event, "return");
+single_field_event!(ErrCallsite, err_callsite, err_event, "exception");
+single_field_event!(YieldCallsite, yield_callsite, yield_event, "yield");
