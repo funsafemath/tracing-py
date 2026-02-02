@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[pyclass]
-pub(crate) struct InstrumentedCoroutine {
+pub struct InstrumentedCoroutine {
     inner: Py<PyAny>,
     span: Span,
     ret_callsite: Option<RetCallsite>,
@@ -18,7 +18,7 @@ pub(crate) struct InstrumentedCoroutine {
 }
 
 impl InstrumentedCoroutine {
-    pub(crate) fn new(
+    pub fn new(
         coroutine: Py<PyAny>,
         span: Span,
         ret_callsite: Option<RetCallsite>,

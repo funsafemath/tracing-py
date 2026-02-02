@@ -7,7 +7,7 @@ use crate::{
 
 mk_imported_type!(PyInterpolation, "string.templatelib", "Interpolation");
 
-pub(crate) enum Conversion {
+pub enum Conversion {
     Str,
     Repr,
     Ascii,
@@ -23,7 +23,7 @@ impl Conversion {
     }
 }
 
-pub(crate) trait PyInterpolationMethods<'py> {
+pub trait PyInterpolationMethods<'py> {
     fn value(&self) -> Bound<'py, PyAny>;
     fn expression(&self) -> Bound<'py, PyString>;
     fn conversion(&self) -> Conversion;

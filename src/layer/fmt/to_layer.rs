@@ -16,11 +16,11 @@ use tracing_subscriber::{
 };
 
 use crate::layer::{
-    FmtLayer, Format, ThreadSafeLayer,
-    fmt::{LogFile, NonBlocking},
+    ThreadSafeLayer,
+    fmt::{FmtLayer, Format, LogFile, NonBlocking},
 };
 
-pub(crate) trait ToDynLayer {
+pub trait ToDynLayer {
     fn dyn_layer(&self) -> PyResult<(Box<dyn ThreadSafeLayer>, Option<WorkerGuard>)>;
 }
 

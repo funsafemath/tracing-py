@@ -8,17 +8,17 @@ static LEAKED_STRINGS: LazyLock<Mutex<RapidHashSet<&'static str>>> = LazyLock::n
 static LEAKED_SLICES: LazyLock<Mutex<RapidHashSet<&'static [&'static str]>>> =
     LazyLock::new(Mutex::default);
 
-pub(super) fn leak<T>(x: T) -> &'static T {
+pub fn leak<T>(x: T) -> &'static T {
     Box::leak(Box::new(x))
 }
 
 // todo: generalize these structs
-pub(super) struct Leaker<'a> {
+pub struct Leaker<'a> {
     guard: MutexGuard<'a, RapidHashSet<&'static str>>,
 }
 
 impl Leaker<'_> {
-    pub(super) fn acquire() -> Self {
+    pub fn acquire() -> Self {
         Self {
             guard: LEAKED_STRINGS.lock().unwrap(),
         }
@@ -28,7 +28,7 @@ impl Leaker<'_> {
         Box::leak(x.into_boxed_str())
     }
 
-    pub(super) fn leak_or_get(&mut self, str: String) -> &'static str {
+    pub fn leak_or_get(&mut self, str: String) -> &'static str {
         if let Some(leaked) = self.guard.get(str.as_str()) {
             leaked
         } else {
@@ -45,12 +45,12 @@ impl Leaker<'_> {
         }
     }
 
-    pub(super) fn leak_or_get_once(str: String) -> &'static str {
+    pub fn leak_or_get_once(str: String) -> &'static str {
         Self::acquire().leak_or_get(str)
     }
 }
 
-pub(super) struct VecLeaker<'a> {
+pub struct VecLeaker<'a> {
     guard: MutexGuard<'a, RapidHashSet<&'static [&'static str]>>,
 }
 
@@ -65,7 +65,7 @@ impl VecLeaker<'_> {
         Box::leak(x.into_boxed_slice())
     }
 
-    pub(super) fn leak_or_get(&mut self, item: Vec<&'static str>) -> &'static [&'static str] {
+    pub fn leak_or_get(&mut self, item: Vec<&'static str>) -> &'static [&'static str] {
         if let Some(leaked) = self.guard.get(item.as_slice()) {
             leaked
         } else {
@@ -82,7 +82,7 @@ impl VecLeaker<'_> {
         }
     }
 
-    pub(super) fn leak_or_get_once(item: Vec<&'static str>) -> &'static [&'static str] {
+    pub fn leak_or_get_once(item: Vec<&'static str>) -> &'static [&'static str] {
         Self::acquire().leak_or_get(item)
     }
 }

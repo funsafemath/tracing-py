@@ -20,7 +20,7 @@ use crate::{
 // afaik json subscriber will emit a field twice, fmt will subscriber print it twice
 // also looks like to_str -> Result<...> method doesn't solve this, it returns a lossy str even on invalid unicode
 #[derive(Debug)]
-pub(crate) struct Signature {
+pub struct Signature {
     param_names: &'static [&'static str],
     kwarg_to_index: RapidHashMap<&'static str, usize>,
     has_excess_args: bool,
@@ -31,7 +31,7 @@ pub(crate) struct Signature {
 }
 
 impl Signature {
-    pub(crate) fn param_names(&self) -> &'static [&'static str] {
+    pub fn param_names(&self) -> &'static [&'static str] {
         self.param_names
     }
 
@@ -45,7 +45,7 @@ impl Signature {
 
     // todo: binding can be done more efficiently in a single pass over 0..pos_only, 0..pos_or_kw and 0..kw_only
     // though it's already >40x times faster than inspect.Signature.bind
-    pub(crate) fn bind<'py>(
+    pub fn bind<'py>(
         &self,
         py: Python<'py>,
         args: &'py Bound<'py, PyTuple>,
@@ -149,7 +149,7 @@ impl Signature {
 
 // todo: don't use inspect
 // inspect.signature is actually not that slow for non-native functions, and we call it only once per instrumented function
-pub(crate) fn extract_signature(func: &Bound<'_, PyFunction>) -> PyResult<Signature> {
+pub fn extract_signature(func: &Bound<'_, PyFunction>) -> PyResult<Signature> {
     let signature = get_inspect_signature(func.py())
         .call1((func,))?
         .cast_into()
