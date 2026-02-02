@@ -54,7 +54,6 @@ impl FunctionType {
 // todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
 // todo: allow instrumenting native functions
 // todo: skip arg extraction if span is not enabled
-// todo: add ret value logging
 // todo: warn/throw an error if attempting to skip a non-existent parameter
 // todo: warn/throw an error if trying to use log_yield on non-generator function
 //
