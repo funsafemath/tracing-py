@@ -32,18 +32,18 @@ impl FmtLayer {
     )]
     #[new]
     #[pyo3(
-        signature = (*, 
-        log_level = PyLevel::Info, 
+        signature = (*,
+        log_level = PyLevel::Info,
         // tracing uses stdout by default, not sure why
         // https://github.com/tokio-rs/tracing/issues/2492
         file = LogFile::Stdout,
-        format = Format::Full, 
+        format = Format::Full,
         fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
         non_blocking = None,
         log_internal_errors = None,
         without_time = false,
-        with_ansi = None, 
-        with_file = None, 
+        with_ansi = None,
+        with_file = None,
         with_level = None,
         with_line_number = None,
         with_target = None,
