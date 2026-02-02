@@ -4,7 +4,7 @@ use crate::{ext::any::infallible_attr, py_type::mk_imported_type};
 
 mk_imported_type!(PySignature, "inspect", "Signature");
 
-pub(crate) trait PySignatureMethods<'py> {
+pub trait PySignatureMethods<'py> {
     fn parameters(&self) -> Bound<'py, PyMappingProxy>;
 }
 

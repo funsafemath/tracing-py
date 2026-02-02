@@ -35,8 +35,7 @@ mod tracing {
 
     #[pymodule_export]
     use super::layer::{
-        FmtLayer, Format,
-        fmt::{NonBlocking, PyLogFile, span::PyFmtSpan},
+        fmt::{FmtLayer, Format, NonBlocking, PyLogFile, span::PyFmtSpan},
         py_init,
     };
 

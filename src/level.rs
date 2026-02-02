@@ -3,7 +3,7 @@ use tracing::Level;
 
 #[pyclass(name = "Level")]
 #[derive(Clone, Copy)]
-pub(crate) enum PyLevel {
+pub enum PyLevel {
     #[pyo3(name = "TRACE")]
     Trace,
     #[pyo3(name = "DEBUG")]

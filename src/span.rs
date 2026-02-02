@@ -46,7 +46,7 @@ impl CallsiteAction for SpanAction<'_> {
     }
 }
 
-pub(crate) fn span(
+pub fn span(
     py: Python,
     level: Level,
     fields: &'static [&'static str],
