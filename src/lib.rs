@@ -1,6 +1,11 @@
 #![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
 #![feature(decl_macro)]
+#![deny(clippy::perf)]
+#![warn(clippy::trivially_copy_pass_by_ref)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::ptr_arg)]
 
 mod cached;
 mod callsite;
