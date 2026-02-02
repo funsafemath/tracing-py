@@ -1,4 +1,9 @@
-use pyo3::{IntoPyObjectExt, exceptions::PyStopIteration, prelude::*, types::PyType};
+use pyo3::{
+    IntoPyObjectExt,
+    exceptions::{PyStopAsyncIteration, PyStopIteration},
+    prelude::*,
+    types::PyType,
+};
 use tracing::Span;
 
 use crate::{
@@ -6,6 +11,21 @@ use crate::{
     ext::any::infallible_attr,
     imports::get_generator_type,
 };
+
+#[derive(Clone, Copy)]
+pub enum GeneratorType {
+    Normal,
+    AsyncGeneratorCoroutine,
+}
+
+impl GeneratorType {
+    fn should_ignore_async_stop(self) -> bool {
+        match self {
+            GeneratorType::Normal => false,
+            GeneratorType::AsyncGeneratorCoroutine => true,
+        }
+    }
+}
 
 // todo: impl all generator methods, use proper inner type
 #[pyclass]
@@ -15,6 +35,7 @@ pub struct InstrumentedGenerator {
     ret_callsite: Option<RetCallsite>,
     err_callsite: Option<ErrCallsite>,
     yield_callsite: Option<YieldCallsite>,
+    gen_type: GeneratorType,
 }
 
 impl InstrumentedGenerator {
@@ -24,6 +45,7 @@ impl InstrumentedGenerator {
         ret_callsite: Option<RetCallsite>,
         err_callsite: Option<ErrCallsite>,
         yield_callsite: Option<YieldCallsite>,
+        gen_type: GeneratorType,
     ) -> Self {
         Self {
             inner,
@@ -31,6 +53,7 @@ impl InstrumentedGenerator {
             ret_callsite,
             err_callsite,
             yield_callsite,
+            gen_type,
         }
     }
 }
@@ -55,6 +78,12 @@ impl InstrumentedGenerator {
                 Ok(ret)
             }
             Err(err) => {
+                if self.gen_type.should_ignore_async_stop()
+                    && err.is_instance_of::<PyStopAsyncIteration>(py)
+                {
+                    return Err(err);
+                }
+
                 let err = err.into_bound_py_any(py)?;
                 // ret_callsite implies err_callsite, so we can do a nested check
                 if let Some(err_callsite) = self.err_callsite {
@@ -90,6 +119,7 @@ impl InstrumentedGenerator {
             ret_callsite: self.ret_callsite,
             err_callsite: self.err_callsite,
             yield_callsite: self.yield_callsite,
+            gen_type: self.gen_type,
         }
         .into_bound_py_any(py)
     }
