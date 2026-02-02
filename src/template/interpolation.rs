@@ -1,21 +1,8 @@
-use pyo3::{PyTypeInfo, prelude::*, types::PyString};
+use pyo3::{prelude::*, types::PyString};
 
-use crate::{ext::any::PyAnyMethodsExt, imports::get_interpolation_type, infallible_attr};
+use crate::{ext::any::PyAnyMethodsExt, infallible_attr, py_type::mk_imported_type};
 
-#[repr(transparent)]
-pub(crate) struct PyInterpolation(PyAny);
-
-// SAFETY: type_object_raw infallibly produces a valid pointer to the type object
-// todo: use conditional compilation
-unsafe impl PyTypeInfo for PyInterpolation {
-    const NAME: &'static str = "Interpolation";
-
-    const MODULE: Option<&'static str> = Some("string.templatelib");
-
-    fn type_object_raw(py: Python<'_>) -> *mut pyo3::ffi::PyTypeObject {
-        get_interpolation_type(py).as_type_ptr()
-    }
-}
+mk_imported_type!(PyInterpolation, "string.templatelib", "Interpolation");
 
 pub(crate) enum Conversion {
     Str,
