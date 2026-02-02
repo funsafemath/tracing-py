@@ -3,8 +3,8 @@ use tracing::Span;
 
 use crate::{
     event::{ErrCallsite, RetCallsite, YieldCallsite},
+    ext::any::infallible_attr,
     imports::get_coroutine_type,
-    infallible_attr,
     instrument::generator::InstrumentedGenerator,
 };
 
