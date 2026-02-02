@@ -23,6 +23,6 @@ valuable = "0.1.1"
 valuable = { path = "./valuable/valuable" }
 valuable-serde = { path = "./valuable/valuable-serde" }
 
-[profile.release]
-lto = true
-codegen-units = 1
+# [profile.release]
+# lto = true
+# codegen-units = 1
