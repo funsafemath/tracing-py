@@ -1,7 +1,7 @@
 use tracing_core::Kind;
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
-pub(super) enum CallsiteKind {
+pub enum CallsiteKind {
     Event,
     Span,
     Hint,

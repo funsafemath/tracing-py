@@ -4,7 +4,7 @@ use pyo3::{ffi, prelude::*, types::PyString};
 
 use crate::ext::ffi::FfiPtrExt;
 
-pub(crate) macro infallible_attr {
+pub macro infallible_attr {
     ($obj:expr, $attr:expr) => {
         ::pyo3::prelude::PyAnyMethods::getattr($obj.as_any(), ::pyo3::intern!($obj.py(), $attr))
             .unwrap()
@@ -20,7 +20,7 @@ pub(crate) macro infallible_attr {
 }
 
 // copied from pyo3 src/py_result_ext.rs
-pub(crate) trait PyResultExt<'py> {
+pub trait PyResultExt<'py> {
     unsafe fn cast_into_unchecked<T>(self) -> PyResult<Bound<'py, T>>;
 }
 
@@ -31,7 +31,7 @@ impl<'py> PyResultExt<'py> for PyResult<Bound<'py, PyAny>> {
     }
 }
 
-pub(crate) trait PyAnyMethodsExt<'py> {
+pub trait PyAnyMethodsExt<'py> {
     fn ascii(&self) -> PyResult<Bound<'py, PyString>>;
 
     fn format(&self, format_spec: Option<Bound<'py, PyString>>) -> PyResult<Bound<'py, PyString>>;

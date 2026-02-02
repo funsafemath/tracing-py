@@ -6,7 +6,7 @@ use pyo3::{
     types::{PyCode, PyFrame},
 };
 
-pub(crate) trait UnboundPyFrameMethodsExt {
+pub trait UnboundPyFrameMethodsExt {
     fn from_thread_state(py: Python<'_>) -> Option<Bound<'_, Self>>
     where
         Self: Sized;
@@ -24,7 +24,7 @@ impl UnboundPyFrameMethodsExt for PyFrame {
 
 // frame should be !Send/!Sync actually, but that requires modifying PyO3 source
 // https://docs.python.org/3/howto/free-threading-python.html#frame-objects
-pub(crate) trait PyFrameMethodsExt<'py> {
+pub trait PyFrameMethodsExt<'py> {
     fn line_number(&self) -> c_int;
 
     fn code(&self) -> Bound<'py, PyCode>;

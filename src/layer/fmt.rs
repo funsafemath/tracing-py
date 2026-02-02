@@ -1,5 +1,5 @@
-pub(crate) mod span;
-pub(crate) mod to_layer;
+pub mod span;
+pub mod to_layer;
 
 use pyo3::{FromPyObject, Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
 use tracing::Level;
@@ -8,7 +8,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
 
 #[pyclass]
-pub(crate) struct FmtLayer {
+pub struct FmtLayer {
     log_level: Level,
     file: LogFile,
     format: Format,
@@ -84,7 +84,7 @@ impl FmtLayer {
 
 #[pyclass]
 #[derive(Clone, Copy)]
-pub(crate) enum Format {
+pub enum Format {
     #[pyo3(name = "FULL")]
     Full,
     #[pyo3(name = "COMPACT")]
@@ -97,7 +97,7 @@ pub(crate) enum Format {
 
 #[pyclass]
 #[derive(Clone, Copy)]
-pub(crate) enum NonBlocking {
+pub enum NonBlocking {
     #[pyo3(name = "LOSSY")]
     Lossy,
     #[pyo3(name = "COMPLETE")]
@@ -128,7 +128,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
 
 #[pyclass(name = "File")]
 #[derive(Clone)]
-pub(crate) enum PyLogFile {
+pub enum PyLogFile {
     #[pyo3(name = "STDOUT")]
     Stdout,
     #[pyo3(name = "STDERR")]

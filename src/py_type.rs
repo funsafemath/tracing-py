@@ -2,9 +2,9 @@ use pyo3::{PyTypeInfo, prelude::*, types::PyType};
 
 use crate::imports::mk_import;
 
-pub(crate) macro mk_imported_type($type:ident, $module:expr, $item:expr) {
+pub macro mk_imported_type($type:ident, $module:expr, $item:expr) {
     #[repr(transparent)]
-    pub(crate) struct $type(PyAny);
+    pub struct $type(PyAny);
 
     mk_import!(get_type, $module, $item, PyType);
 
