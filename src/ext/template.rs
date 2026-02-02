@@ -5,7 +5,7 @@ use crate::template::{
     template_string::{PyTemplate, PyTemplateMethods},
 };
 
-pub(crate) trait PyTemplateMethodsExt<'py> {
+pub trait PyTemplateMethodsExt<'py> {
     fn format(&self) -> String;
 }
 

@@ -1,2 +1,2 @@
-pub(crate) mod interpolation;
-pub(crate) mod template_string;
+pub mod interpolation;
+pub mod template_string;
