@@ -5,34 +5,23 @@ use pyo3::{
     types::{PyCFunction, PyFunction, PyType},
 };
 
-macro_rules! mk_import {
-    ($fn_name:ident, $module:expr, $item:expr, $type:ty) => {
-        pub(super) fn $fn_name<'py>(py: Python<'py>) -> &'py Bound<'py, $type> {
-            static LOCK: PyOnceLock<Py<$type>> = PyOnceLock::new();
+pub(crate) macro mk_import($fn_name:ident, $module:expr, $item:expr, $type:ty) {
+    pub(crate) fn $fn_name<'py>(py: Python<'py>) -> &'py Bound<'py, $type> {
+        static LOCK: PyOnceLock<Py<$type>> = PyOnceLock::new();
 
-            get_or_import(py, &LOCK, $module, $item)
-        }
-    };
+        get_or_import(py, &LOCK, $module, $item)
+    }
 }
 
 mk_import!(get_generator_type, "types", "GeneratorType", PyType);
 mk_import!(get_coroutine_type, "types", "CoroutineType", PyType);
 
-mk_import!(get_template_type, "string.templatelib", "Template", PyType);
-mk_import!(
-    get_interpolation_type,
-    "string.templatelib",
-    "Interpolation",
-    PyType
-);
-
 mk_import!(get_inspect_signature, "inspect", "signature", PyFunction);
-mk_import!(get_inspect_signature_type, "inspect", "Signature", PyType);
 mk_import!(get_inspect_parameter_type, "inspect", "Parameter", PyType);
 
 mk_import!(get_atexit_register, "atexit", "register", PyCFunction);
 
-fn get_or_import<'py, 'a, T: PyTypeCheck>(
+pub(crate) fn get_or_import<'py, 'a, T: PyTypeCheck>(
     py: Python<'py>,
     lock: &'a PyOnceLock<Py<T>>,
     module: &'static str,
