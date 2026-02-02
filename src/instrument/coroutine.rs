@@ -58,7 +58,7 @@ impl InstrumentedCoroutine {
 
     fn __await__<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
         let generator = infallible_attr!(self.inner, "__await__", py).call0()?;
-        Ok(InstrumentedGenerator::new(
+        InstrumentedGenerator::new(
             generator.unbind(),
             self.span.clone(),
             self.ret_callsite,
@@ -66,7 +66,6 @@ impl InstrumentedCoroutine {
             self.yield_callsite,
         )
         .into_py_any(py)
-        .unwrap())
     }
 
     #[getter]
