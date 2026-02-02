@@ -5,15 +5,17 @@ use pyo3::{
     types::{PyDict, PyDictMethods, PyTuple},
 };
 use tracing::{Event, Level, Metadata, Value, field::ValueSet};
-use tracing_core::Kind;
+use tracing_core::{Callsite, Kind, callsite::DefaultCallsite};
 use valuable::Valuable;
 
 use crate::{
     cached::{CachedDisplay, CachedValue},
-    callsite::{self, CallsiteAction},
+    callsite::{self, CallsiteAction, Context},
     formatting::{
         percent::PercentFormatted,
-        valuable::{PyCachedValuable, QuotedString, UnquotedString},
+        valuable::{
+            NeverQuote, PyCachedValuable, QuoteStrAndTmpl, TemplateInterpolate, TemplateRepr,
+        },
     },
     leak::{Leaker, VecLeaker},
 };
@@ -83,7 +85,10 @@ pub(crate) fn leak_or_get_kwargs<'py>(
     // todo: accept a mut ref
     leaker: Option<Leaker>,
     kwargs: Option<&Bound<'py, PyDict>>,
-) -> (Vec<&'static str>, Vec<PyCachedValuable<'py, QuotedString>>) {
+) -> (
+    Vec<&'static str>,
+    Vec<PyCachedValuable<'py, QuoteStrAndTmpl, TemplateInterpolate>>,
+) {
     let mut fields = vec![];
     let mut values = vec![];
 
@@ -92,7 +97,7 @@ pub(crate) fn leak_or_get_kwargs<'py>(
 
         for (key, value) in kwargs.iter() {
             fields.push(leaker.leak_or_get(key.to_string()));
-            values.push(PyCachedValuable::<QuotedString>::from(value));
+            values.push(PyCachedValuable::<QuoteStrAndTmpl, TemplateInterpolate>::from(value));
         }
     }
 
@@ -136,7 +141,7 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         match self.message {
             Message::Any(None) => f(fields, &values),
             Message::Any(Some(message)) => {
-                let message = PyCachedValuable::<UnquotedString>::from(message);
+                let message = PyCachedValuable::<NeverQuote, TemplateInterpolate>::from(message);
                 let message = &message as &dyn Valuable;
                 values.insert(0, Some(&message as &dyn Value));
                 f(fields, &values)
@@ -156,3 +161,84 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
         Event::dispatch(metadata, values);
     }
 }
+
+macro_rules! single_field_event {
+    ($mod:ident, $struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) => {
+        mod $mod {
+            use super::*;
+
+            #[derive(Clone, Copy, Debug)]
+            pub(crate) struct $struct_name(&'static DefaultCallsite);
+
+            struct Action<'py> {
+                value: Bound<'py, PyAny>,
+                callsite: $struct_name,
+            }
+
+            static FIELDS: &[&str] = &[$field];
+
+            impl<'py> CallsiteAction for Action<'py> {
+                const KIND: Kind = Kind::EVENT;
+
+                type ReturnType = ();
+
+                fn with_fields_and_values(
+                    self,
+                    f: impl FnOnce(
+                        &'static [&'static str],
+                        &[Option<&dyn Value>],
+                    ) -> Option<Self::ReturnType>,
+                ) -> Option<Self::ReturnType> {
+                    let value = PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from(self.value);
+                    f(FIELDS, &[Some(&(&value as &dyn Valuable) as &dyn Value)])
+                }
+
+                fn do_if_enabled(
+                    metadata: &'static Metadata,
+                    values: &ValueSet,
+                ) -> Self::ReturnType {
+                    Event::dispatch(metadata, values);
+                }
+            }
+
+            pub(crate) fn $fn_create_name(context: Context, level: Level) -> $struct_name {
+                $struct_name(callsite::get_or_init_callsite(
+                    context,
+                    level,
+                    FIELDS,
+                    Kind::EVENT,
+                ))
+            }
+
+            pub(crate) fn $fn_emit_name(
+                py: Python,
+                value: Bound<'_, PyAny>,
+                callsite: $struct_name,
+            ) -> Option<()> {
+                callsite::do_action(
+                    py,
+                    callsite.0.metadata().level().to_owned(),
+                    Action { value, callsite },
+                    Some(callsite.0),
+                )
+            }
+        }
+        pub(crate) use $mod::{$fn_create_name, $fn_emit_name, $struct_name};
+    };
+}
+
+single_field_event!(ret_callsite, RetCallsite, ret_callsite, ret_event, "return");
+single_field_event!(
+    err_callsite,
+    ErrCallsite,
+    err_callsite,
+    err_event,
+    "exception"
+);
+single_field_event!(
+    yield_callsite,
+    YieldCallsite,
+    yield_callsite,
+    yield_event,
+    "yield"
+);
