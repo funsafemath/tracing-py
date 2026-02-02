@@ -18,6 +18,7 @@ use crate::{
     introspect::Inspector,
 };
 
+#[derive(Clone)]
 pub(crate) enum Context<'py> {
     FromThreadState(Python<'py>),
     FrameAndCode {
@@ -95,6 +96,8 @@ fn is_callsite_enabled(callsite: &'static DefaultCallsite) -> bool {
                     && tracing::__macro_support::__is_enabled(callsite.metadata(), interest)
 }
 
+// todo: callsite already has it's own level, so passing both level and callsite is meaningless
+// also, if callsite is known, we don't need fields, so with_values function should be added
 pub(crate) fn do_action<A: CallsiteAction>(
     py: Python,
     level: Level,

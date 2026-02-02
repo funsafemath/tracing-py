@@ -1,18 +1,37 @@
-use pyo3::{IntoPyObjectExt, prelude::*, types::PyType};
+use pyo3::{IntoPyObjectExt, exceptions::PyStopIteration, prelude::*, types::PyType};
 use tracing::Span;
 
-use crate::{imports::get_generator_type, infallible_attr};
+use crate::{
+    event::{self, ErrCallsite, RetCallsite, YieldCallsite},
+    imports::get_generator_type,
+    infallible_attr,
+};
 
 // todo: impl all generator methods, use proper inner type
 #[pyclass]
 pub(crate) struct InstrumentedGenerator {
     inner: Py<PyAny>,
     span: Span,
+    ret_callsite: Option<RetCallsite>,
+    err_callsite: Option<ErrCallsite>,
+    yield_callsite: Option<YieldCallsite>,
 }
 
 impl InstrumentedGenerator {
-    pub(crate) fn new(inner: Py<PyAny>, span: Span) -> Self {
-        Self { inner, span }
+    pub(crate) fn new(
+        inner: Py<PyAny>,
+        span: Span,
+        ret_callsite: Option<RetCallsite>,
+        err_callsite: Option<ErrCallsite>,
+        yield_callsite: Option<YieldCallsite>,
+    ) -> Self {
+        Self {
+            inner,
+            span,
+            ret_callsite,
+            err_callsite,
+            yield_callsite,
+        }
     }
 }
 
@@ -27,7 +46,39 @@ impl InstrumentedGenerator {
     // todo: use c iter next method directly (the performance is already great actually)
     fn __next__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let _enter = self.span.enter();
-        infallible_attr!(self.inner, "__next__", py).call0()
+        let ret_val = infallible_attr!(self.inner, "__next__", py).call0();
+        match ret_val {
+            Ok(ret) => {
+                if let Some(yield_callsite) = self.yield_callsite {
+                    event::yield_event(py, ret.clone(), yield_callsite);
+                }
+                Ok(ret)
+            }
+            Err(err) => {
+                let err = err.into_bound_py_any(py)?;
+                // ret_callsite implies err_callsite, so we can do a nested check
+                if let Some(err_callsite) = self.err_callsite {
+                    // todo: as i've already written in instrument.rs,
+                    // events should use &Bound, not Bound, so clones aren't needed
+                    let err = err.clone();
+                    match err.cast_into::<PyStopIteration>() {
+                        Ok(stop_iteration) => {
+                            if let Some(ret_callsite) = self.ret_callsite {
+                                event::ret_event(
+                                    py,
+                                    infallible_attr!(stop_iteration, "value"),
+                                    ret_callsite,
+                                );
+                            }
+                        }
+                        Err(err) => {
+                            event::err_event(py, err.into_inner(), err_callsite);
+                        }
+                    }
+                }
+                Err(PyErr::from_value(err))
+            }
+        }
     }
 
     // we can pretty much always return Self, but let's call the actual __iter__ method just to be sure
@@ -36,6 +87,9 @@ impl InstrumentedGenerator {
         InstrumentedGenerator {
             inner: iterable.unbind(),
             span: self.span.clone(),
+            ret_callsite: self.ret_callsite,
+            err_callsite: self.err_callsite,
+            yield_callsite: self.yield_callsite,
         }
         .into_bound_py_any(py)
     }
