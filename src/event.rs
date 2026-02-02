@@ -163,9 +163,9 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     }
 }
 
-macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) {
+macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field:literal) {
     #[derive(Clone, Copy, Debug)]
-    pub(crate) struct $struct_name(&'static DefaultCallsite);
+    pub(crate) struct $struct(&'static DefaultCallsite);
 
     struct Action<'py>(Bound<'py, PyAny>);
 
@@ -192,8 +192,8 @@ macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_nam
         }
     }
 
-    pub(crate) fn $fn_create_name(context: Context, level: Level) -> $struct_name {
-        $struct_name(callsite::get_or_init_callsite(
+    pub(crate) fn $fn_create(context: Context, level: Level) -> $struct {
+        $struct(callsite::get_or_init_callsite(
             context,
             level,
             FIELDS,
@@ -201,10 +201,10 @@ macro single_field_event($struct_name:ident, $fn_create_name:ident, $fn_emit_nam
         ))
     }
 
-    pub(crate) fn $fn_emit_name(
+    pub(crate) fn $fn_emit(
         py: Python,
         value: Bound<'_, PyAny>,
-        callsite: $struct_name,
+        callsite: $struct,
     ) -> Option<()> {
         callsite::do_action(
             py,
