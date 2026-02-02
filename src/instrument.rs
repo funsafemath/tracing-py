@@ -111,7 +111,7 @@ fn instrument<'py>(
 
             let function = function.bind(args.py());
 
-            let bound = if options.skip_all {
+            let bound = if retain_indices.is_empty() {
                 vec![]
             } else {
                 let mut bound: Vec<Bound<'_, PyAny>> = match signature.bind(
