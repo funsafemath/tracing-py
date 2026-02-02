@@ -176,24 +176,24 @@ def instrument(
     func: None = None,
     /,
     *,
-    level: Level | None = None,
-    skip: Sequence[str] | None = None,
-    skip_all: bool | None = None,
-    ret: bool | None = None,
-    ret_err_only: bool | None = None,
-    no_yield: bool | None = None,
+    level: Level = Level.INFO,
+    skip: Sequence[str] = [],
+    skip_all: bool = False,
+    ret: bool = False,
+    ret_err_only: bool = False,
+    no_yield: bool = False,
 ) -> Callable[[T], T]: ...
 @overload
 def instrument(
     func: T,
     /,
     *,
-    level: Level | None = None,
-    skip: Sequence[str] | None = None,
-    skip_all: bool | None = None,
-    ret: bool | None = None,
-    ret_err_only: bool | None = None,
-    no_yield: bool | None = None,
+    level: Level = Level.INFO,
+    skip: Sequence[str] = [],
+    skip_all: bool = False,
+    ret: bool = False,
+    ret_err_only: bool = False,
+    no_yield: bool = False,
 ) -> T: ...
 
 __all__ = [
