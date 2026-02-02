@@ -1,4 +1,5 @@
-pub mod coroutine;
+mod async_generator;
+mod coroutine;
 mod generator;
 mod parameter;
 mod py_signature;
@@ -20,9 +21,11 @@ use crate::{
     callsite::{self, Context},
     event::{self, ErrCallsite, RetCallsite, YieldCallsite, ret_event},
     ext::{frame::UnboundPyFrameMethodsExt, function::PyFunctionMethodsExt},
-    imports::{get_coroutine_type, get_generator_type},
+    imports::{get_async_generator_type, get_coroutine_type, get_generator_type},
     instrument::{
-        coroutine::InstrumentedCoroutine, generator::InstrumentedGenerator,
+        async_generator::InstrumentedAsyncGenerator,
+        coroutine::InstrumentedCoroutine,
+        generator::{GeneratorType, InstrumentedGenerator},
         signature::extract_signature,
     },
     leak::VecLeaker,
@@ -34,7 +37,7 @@ enum FunctionType {
     Normal,
     Generator,
     Async,
-    // todo: AsyncGenerator
+    AsyncGenerator,
 }
 
 impl FunctionType {
@@ -45,6 +48,8 @@ impl FunctionType {
             Self::Async
         } else if ret_val.is_instance(get_generator_type(py))? {
             Self::Generator
+        } else if ret_val.is_instance(get_async_generator_type(py))? {
+            Self::AsyncGenerator
         } else {
             Self::Normal
         })
@@ -178,13 +183,28 @@ fn instrument<'py>(
                     ret_callsite,
                     err_callsite,
                     yield_callsite,
+                    GeneratorType::Normal,
                 )
                 .into_py_any(py)?,
                 FunctionType::Async => {
                     // yield_callsite in this case will just log <Future Pending> on (some) await points, which isn't useful
-                    InstrumentedCoroutine::new(res.unbind(), span, ret_callsite, err_callsite, None)
-                        .into_py_any(py)?
+                    InstrumentedCoroutine::new(
+                        res.unbind(),
+                        span,
+                        ret_callsite,
+                        err_callsite,
+                        None,
+                        GeneratorType::Normal,
+                    )
+                    .into_py_any(py)?
                 }
+                FunctionType::AsyncGenerator => InstrumentedAsyncGenerator::new(
+                    res.unbind(),
+                    span,
+                    err_callsite,
+                    yield_callsite,
+                )
+                .into_py_any(py)?,
             })
         },
     )?
