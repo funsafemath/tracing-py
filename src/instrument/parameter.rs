@@ -12,7 +12,7 @@ pub(crate) trait PyParameterMethods<'py> {
 
 impl<'py> PyParameterMethods<'py> for Bound<'py, PyParameter> {
     fn kind(&self) -> ParamKind {
-        ParamKind::maybe_from(infallible_attr!(self, "kind")).unwrap()
+        ParamKind::maybe_from(&infallible_attr!(self, "kind")).unwrap()
     }
 }
 
@@ -26,19 +26,19 @@ pub(crate) enum ParamKind {
 }
 
 impl ParamKind {
-    fn maybe_from(param: Bound<'_, PyAny>) -> Option<Self> {
+    fn maybe_from(param: &Bound<'_, PyAny>) -> Option<Self> {
         let py = param.py();
 
         if param.is(Self::pos_only(py)) {
-            Some(ParamKind::PositionalOnly)
+            Some(Self::PositionalOnly)
         } else if param.is(Self::pos_kw(py)) {
-            Some(ParamKind::PositionalOrKeyword)
+            Some(Self::PositionalOrKeyword)
         } else if param.is(Self::excess_args(py)) {
-            Some(ParamKind::ExcessArgs)
+            Some(Self::ExcessArgs)
         } else if param.is(Self::kw_only(py)) {
-            Some(ParamKind::KeywordOnly)
+            Some(Self::KeywordOnly)
         } else if param.is(Self::excess_kwargs(py)) {
-            Some(ParamKind::ExcessKwargs)
+            Some(Self::ExcessKwargs)
         } else {
             None
         }

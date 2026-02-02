@@ -17,7 +17,7 @@ pub(super) struct Leaker<'a> {
     guard: MutexGuard<'a, RapidHashSet<&'static str>>,
 }
 
-impl<'a> Leaker<'a> {
+impl Leaker<'_> {
     pub(super) fn acquire() -> Self {
         Self {
             guard: LEAKED_STRINGS.lock().unwrap(),
@@ -29,20 +29,19 @@ impl<'a> Leaker<'a> {
     }
 
     pub(super) fn leak_or_get(&mut self, str: String) -> &'static str {
-        match self.guard.get(str.as_str()) {
-            Some(leaked) => leaked,
-            None => {
-                if self.guard.len() >= 100000 {
-                    warn!(
-                        "there are {} leaked strings, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
-                        self.guard.len()
-                    );
-                }
-
-                let leaked = Self::leak_string(str);
-                self.guard.insert(leaked);
-                leaked
+        if let Some(leaked) = self.guard.get(str.as_str()) {
+            leaked
+        } else {
+            if self.guard.len() >= 100_000 {
+                warn!(
+                    "there are {} leaked strings, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
+                    self.guard.len()
+                );
             }
+
+            let leaked = Self::leak_string(str);
+            self.guard.insert(leaked);
+            leaked
         }
     }
 
@@ -55,7 +54,7 @@ pub(super) struct VecLeaker<'a> {
     guard: MutexGuard<'a, RapidHashSet<&'static [&'static str]>>,
 }
 
-impl<'a> VecLeaker<'a> {
+impl VecLeaker<'_> {
     fn acquire() -> Self {
         Self {
             guard: LEAKED_SLICES.lock().unwrap(),
@@ -67,20 +66,19 @@ impl<'a> VecLeaker<'a> {
     }
 
     pub(super) fn leak_or_get(&mut self, item: Vec<&'static str>) -> &'static [&'static str] {
-        match self.guard.get(item.as_slice()) {
-            Some(leaked) => leaked,
-            None => {
-                if self.guard.len() >= 100000 {
-                    warn!(
-                        "there are {} leaked field combinations, are you sure you're doing the right thing? using tracing in dynamically compiled code or calling instrument() with different field combinations leaks memory",
-                        self.guard.len()
-                    );
-                }
-
-                let leaked = Self::leak_vec(item);
-                self.guard.insert(leaked);
-                leaked
+        if let Some(leaked) = self.guard.get(item.as_slice()) {
+            leaked
+        } else {
+            if self.guard.len() >= 100_000 {
+                warn!(
+                    "there are {} leaked field combinations, are you sure you're doing the right thing? using tracing in dynamically compiled code or calling instrument() with different field combinations leaks memory",
+                    self.guard.len()
+                );
             }
+
+            let leaked = Self::leak_vec(item);
+            self.guard.insert(leaked);
+            leaked
         }
     }
 

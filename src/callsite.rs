@@ -61,12 +61,12 @@ pub(crate) fn get_or_init_callsite(
         inspector.ix_address(),
         level,
         fields,
-        CallsiteKind::from(kind.clone()),
+        CallsiteKind::from(kind),
     );
 
     let mut callsites = CALLSITES.lock().unwrap();
 
-    if callsites.len() >= 100000 {
+    if callsites.len() >= 100_000 {
         warn!(
             "there are {} callsites, are you sure you're doing the right thing? using tracing in dynamically compiled code leaks memory",
             callsites.len()
@@ -105,17 +105,16 @@ pub(crate) fn do_action<A: CallsiteAction>(
     callsite: Option<&'static DefaultCallsite>,
 ) -> Option<A::ReturnType> {
     if level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() {
-        if callsite.map(is_callsite_enabled) == Some(false) {
+        if callsite.is_some_and(|x| !is_callsite_enabled(x)) {
             return None;
         }
 
         action.with_fields_and_values(|fields, values| {
             // todo: maybe remove the fields from the callsite id,
             // so filtering by callsite can be done before extracting the fields
-            let callsite: &DefaultCallsite = match callsite {
-                Some(callsite) => callsite,
-                None => get_or_init_callsite(Context::FromThreadState(py), level, fields, A::KIND),
-            };
+            let callsite: &DefaultCallsite = callsite.unwrap_or_else(|| {
+                get_or_init_callsite(Context::FromThreadState(py), level, fields, A::KIND)
+            });
 
             // todo: don't check again if it was already checked
             if is_callsite_enabled(callsite) {

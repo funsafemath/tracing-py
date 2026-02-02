@@ -13,7 +13,7 @@ struct SpanAction<'py> {
     values: Vec<Bound<'py, PyAny>>,
 }
 
-impl<'py> CallsiteAction for SpanAction<'py> {
+impl CallsiteAction for SpanAction<'_> {
     const KIND: Kind = Kind::SPAN;
     type ReturnType = Span;
 

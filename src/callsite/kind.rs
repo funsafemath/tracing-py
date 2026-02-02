@@ -18,7 +18,7 @@ impl From<Kind> for CallsiteKind {
         } else {
             // yes, From<T> generally shouldn't panic, but python code can't create an invalid value
             // and call this function directly, so it basically never panics
-            panic!("unknown callsite kind: {value:?}")
+            unreachable!("unknown callsite kind: {value:?}")
         }
     }
 }
@@ -26,9 +26,9 @@ impl From<Kind> for CallsiteKind {
 impl From<CallsiteKind> for Kind {
     fn from(value: CallsiteKind) -> Self {
         match value {
-            CallsiteKind::Event => Kind::EVENT,
-            CallsiteKind::Span => Kind::SPAN,
-            CallsiteKind::Hint => Kind::HINT,
+            CallsiteKind::Event => Self::EVENT,
+            CallsiteKind::Span => Self::SPAN,
+            CallsiteKind::Hint => Self::HINT,
         }
     }
 }

@@ -13,7 +13,7 @@ pub(super) struct EmptyCallsite {}
 impl EmptyCallsite {
     pub(super) fn new() -> &'static Self {
         let value = NEXT_REF_ADDR.fetch_add(1, Ordering::Relaxed);
-        let callsite: *const EmptyCallsite = ptr::without_provenance(value);
+        let callsite: *const Self = ptr::without_provenance(value);
         // SAFETY: value is non-null, ZSTs don't need provenance and may be located at dangling addresses
         // also miri says it's ok
         unsafe { callsite.as_ref().expect("usize overflow? really?") }

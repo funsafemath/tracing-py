@@ -56,7 +56,7 @@ impl InstrumentedCoroutine {
         infallible_attr!(self.inner, "throw", py).call1((arg,))
     }
 
-    fn __await__<'py>(&self, py: Python<'py>) -> PyResult<Py<PyAny>> {
+    fn __await__(&self, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let generator = infallible_attr!(self.inner, "__await__", py).call0()?;
         InstrumentedGenerator::new(
             generator.unbind(),

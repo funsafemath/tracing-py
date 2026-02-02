@@ -26,21 +26,20 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 #[pymodule(name = "tracing")]
 mod tracing {
-    use super::*;
 
     #[pymodule_export]
-    use level::PyLevel;
+    use super::level::PyLevel;
 
     #[pymodule_export]
-    use event::{py_debug, py_error, py_info, py_trace, py_warn};
+    use super::event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{
+    use super::layer::{
         FmtLayer, Format,
         fmt::{NonBlocking, PyLogFile, span::PyFmtSpan},
         py_init,
     };
 
     #[pymodule_export]
-    use instrument::py_instrument;
+    use super::instrument::py_instrument;
 }
