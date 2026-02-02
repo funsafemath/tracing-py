@@ -45,7 +45,6 @@ impl Signature {
 
     // todo: binding can be done more efficiently in a single pass over 0..pos_only, 0..pos_or_kw and 0..kw_only
     // though it's already >40x times faster than inspect.Signature.bind
-    // todo: don't use inspect signature for default arg counts
     pub(crate) fn bind<'py>(
         &self,
         py: Python<'py>,
@@ -87,7 +86,7 @@ impl Signature {
                 match index {
                     Some(index) => {
                         if bound_args[*index].is_some() {
-                            bail!("arg \"{kw_name}\" passed twice")
+                            bail!(r#"arg "{kw_name}" passed twice"#)
                         }
                         bound_args[*index] = Some(kw_value);
                     }
@@ -148,6 +147,7 @@ impl Signature {
     }
 }
 
+// todo: don't use inspect
 // inspect.signature is actually not that slow for non-native functions, and we call it only once per instrumented function
 pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<Signature> {
     let signature = get_inspect_signature(func.py())
@@ -164,7 +164,6 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
     let mut has_excess_args = false;
     let mut has_excess_kwargs = false;
     let mut kwarg_to_index = RapidHashMap::default();
-    let mut defaults = Vec::new();
 
     for (i, param_tuple) in params.items()?.into_iter().enumerate() {
         let param_tuple = param_tuple.cast::<PyTuple>()?;
@@ -183,9 +182,6 @@ pub(crate) fn extract_signature<'py>(func: &Bound<'py, PyFunction>) -> PyResult<
                 kwarg_to_index.insert(param_name, i);
             }
             ParamKind::ExcessKwargs => has_excess_kwargs = true,
-        }
-        if param.has_default() {
-            defaults.push(i);
         }
         param_names.push(param_name);
     }
