@@ -12,14 +12,14 @@ use crate::{
     template::template_string::PyTemplate,
 };
 
-pub(crate) trait StrFmt {
+pub trait StrFmt {
     fn make<T: TemplateFmt>(string: String) -> OwnedValuable<Self, T>
     where
         Self: Sized;
 }
 
-pub(crate) enum QuoteStrAndTmpl {}
-pub(crate) enum NeverQuote {}
+pub enum QuoteStrAndTmpl {}
+pub enum NeverQuote {}
 
 impl StrFmt for QuoteStrAndTmpl {
     fn make<T: TemplateFmt>(str: String) -> OwnedValuable<Self, T> {
@@ -33,14 +33,14 @@ impl StrFmt for NeverQuote {
     }
 }
 
-pub(crate) trait TemplateFmt {
+pub trait TemplateFmt {
     fn make<S: StrFmt>(template: &Bound<'_, PyTemplate>) -> OwnedValuable<S, Self>
     where
         Self: Sized;
 }
 
-pub(crate) enum TemplateInterpolate {}
-pub(crate) enum TemplateRepr {}
+pub enum TemplateInterpolate {}
+pub enum TemplateRepr {}
 
 impl TemplateFmt for TemplateInterpolate {
     fn make<S: StrFmt>(template: &Bound<'_, PyTemplate>) -> OwnedValuable<S, Self>
@@ -60,11 +60,11 @@ impl TemplateFmt for TemplateRepr {
     }
 }
 
-pub(crate) type PyCachedValuable<'py, S, T> =
+pub type PyCachedValuable<'py, S, T> =
     CachedValue<OwnedValuable<S, T>, Bound<'py, PyAny>, CachedValuable>;
 
 // todo: add list/dict here
-pub(crate) enum OwnedValuable<S, T> {
+pub enum OwnedValuable<S, T> {
     SmallInt(i128),
     Float(f64),
     Bool(bool),
