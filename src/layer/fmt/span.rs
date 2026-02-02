@@ -2,30 +2,30 @@ use pyo3::prelude::*;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[pyclass(name = "FmtSpan")]
-pub(crate) struct PyFmtSpan(FmtSpan);
+pub struct PyFmtSpan(FmtSpan);
 
 #[pymethods]
 impl PyFmtSpan {
     #[classattr]
-    pub(crate) const NEW: Self = Self(FmtSpan::NEW);
+    pub const NEW: Self = Self(FmtSpan::NEW);
 
     #[classattr]
-    pub(crate) const ENTER: Self = Self(FmtSpan::ENTER);
+    pub const ENTER: Self = Self(FmtSpan::ENTER);
 
     #[classattr]
-    pub(crate) const EXIT: Self = Self(FmtSpan::EXIT);
+    pub const EXIT: Self = Self(FmtSpan::EXIT);
 
     #[classattr]
-    pub(crate) const CLOSE: Self = Self(FmtSpan::CLOSE);
+    pub const CLOSE: Self = Self(FmtSpan::CLOSE);
 
     #[classattr]
-    pub(crate) const NONE: Self = Self(FmtSpan::NONE);
+    pub const NONE: Self = Self(FmtSpan::NONE);
 
     #[classattr]
-    pub(crate) const ACTIVE: Self = Self(FmtSpan::ACTIVE);
+    pub const ACTIVE: Self = Self(FmtSpan::ACTIVE);
 
     #[classattr]
-    pub(crate) const FULL: Self = Self(FmtSpan::FULL);
+    pub const FULL: Self = Self(FmtSpan::FULL);
 
     fn __or__(&self, other: Bound<'_, Self>) -> Self {
         Self(self.0.clone() | other.borrow().0.clone())

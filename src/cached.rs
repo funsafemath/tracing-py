@@ -6,12 +6,12 @@ pub use valuable::CachedValuable;
 
 use std::{cell::OnceCell, marker::PhantomData};
 
-pub(super) trait GetValue<V, M> {
+pub trait GetValue<V, M> {
     fn value(&self) -> V;
 }
 
 // marker allows to switch between blanket implementations, the type system is quite cool
-pub(super) struct CachedValue<V, T: GetValue<V, M>, M> {
+pub struct CachedValue<V, T: GetValue<V, M>, M> {
     inner: T,
     cached: OnceCell<V>,
     marker: PhantomData<M>,
@@ -28,7 +28,7 @@ impl<V, T: GetValue<V, M>, M> From<T> for CachedValue<V, T, M> {
 }
 
 impl<V, T: GetValue<V, M>, M> CachedValue<V, T, M> {
-    pub(super) fn get_or_init(&self) -> &V {
+    pub fn get_or_init(&self) -> &V {
         self.cached.get_or_init(|| self.inner.value())
     }
 }

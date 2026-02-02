@@ -15,14 +15,14 @@ unsafe extern "C" {
 }
 
 #[non_exhaustive]
-pub(crate) struct Inspector<'a, 'py> {
-    pub(crate) frame: &'a Bound<'py, PyFrame>,
-    pub(crate) code: Bound<'py, PyCode>,
-    pub(crate) py: Python<'py>,
+pub struct Inspector<'a, 'py> {
+    pub frame: &'a Bound<'py, PyFrame>,
+    pub code: Bound<'py, PyCode>,
+    pub py: Python<'py>,
 }
 
 impl<'a, 'py> Inspector<'a, 'py> {
-    pub(crate) fn new(frame: &'a Bound<'py, PyFrame>) -> Self {
+    pub fn new(frame: &'a Bound<'py, PyFrame>) -> Self {
         Self {
             code: frame.code(),
             py: frame.py(),
@@ -30,7 +30,7 @@ impl<'a, 'py> Inspector<'a, 'py> {
         }
     }
 
-    pub(crate) fn ix_address(&self) -> usize {
+    pub fn ix_address(&self) -> usize {
         let last_instruction_offset = self
             .frame
             .last_ix_index()
@@ -43,7 +43,7 @@ impl<'a, 'py> Inspector<'a, 'py> {
     // it fails if someone changes __name__, but who would do this?
     //
     // maybe i'll fix it later, but anyway it's evaluated only a single time for each callsite
-    pub(crate) fn module(&self) -> String {
+    pub fn module(&self) -> String {
         // SAFETY: safe to call, null check is at Py::from_owned_ptr
         let globals = unsafe { PyEval_GetFrameGlobals() };
 

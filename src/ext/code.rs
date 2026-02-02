@@ -5,7 +5,7 @@ use pyo3::{
 
 use crate::ext::any::infallible_attr;
 
-pub(crate) trait PyCodeMethodsExt<'py> {
+pub trait PyCodeMethodsExt<'py> {
     fn filename(&self) -> Bound<'py, PyString>;
 
     fn qualname(&self) -> Bound<'py, PyString>;
