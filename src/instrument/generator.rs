@@ -84,7 +84,7 @@ impl InstrumentedGenerator {
     // we can pretty much always return Self, but let's call the actual __iter__ method just to be sure
     fn __iter__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let iterable = infallible_attr!(self.inner, "__iter__", py).call0()?;
-        InstrumentedGenerator {
+        Self {
             inner: iterable.unbind(),
             span: self.span.clone(),
             ret_callsite: self.ret_callsite,

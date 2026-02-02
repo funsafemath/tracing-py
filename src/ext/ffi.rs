@@ -7,10 +7,10 @@ use pyo3::{ffi, prelude::*};
 /// Returns Ok if the error code is not -1.
 #[inline]
 pub(crate) fn error_on_minusone(py: Python<'_>, result: c_int) -> PyResult<()> {
-    if result != -1 {
-        Ok(())
-    } else {
+    if result == -1 {
         Err(PyErr::fetch(py))
+    } else {
+        Ok(())
     }
 }
 

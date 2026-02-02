@@ -96,7 +96,7 @@ fn instrument<'py>(
             .iter()
             .map(|x| *param_to_index.index(x))
             .collect::<Vec<_>>();
-        indices.sort();
+        indices.sort_unstable();
         indices
     };
 
@@ -124,7 +124,7 @@ fn instrument<'py>(
                     Ok(sign) => sign,
                     Err(e) => {
                         error!("failed to bind arguments to {function:?} parameters: {e}");
-                        return function.call(args, kwargs).map(|x| x.unbind());
+                        return function.call(args, kwargs).map(Bound::unbind);
                     }
                 };
 
@@ -148,7 +148,7 @@ fn instrument<'py>(
                         let err = err.into_bound_py_any(py)?;
                         if let Some(err_callsite) = err_callsite {
                             event::err_event(py, err.clone().into_bound_py_any(py)?, err_callsite);
-                        };
+                        }
                         return Err(PyErr::from_value(err));
                     }
                 };
@@ -156,7 +156,7 @@ fn instrument<'py>(
                 // todo: cache it, maybe?
                 let fn_type = FunctionType::guess_from_return_value(&ret_val)?;
                 if let Some(ret_callsite) = ret_callsite
-                    && let FunctionType::Normal = fn_type
+                    && matches!(fn_type, FunctionType::Normal)
                 {
                     // todo: use &Bound in PyCachedValuable and get rid of this clone
                     ret_event(py, ret_val.clone(), ret_callsite);
@@ -219,7 +219,7 @@ impl Default for InstrumentOptions {
     fn default() -> Self {
         Self {
             level: Self::DEFAULT_LEVEL,
-            skip: Default::default(),
+            skip: RapidHashSet::default(),
             skip_all: Default::default(),
             ret_log: RetLog::default(),
         }
@@ -263,28 +263,22 @@ impl RetLog {
 
     fn ret(&self) -> bool {
         match self {
-            RetLog::RetYieldErr => true,
-            RetLog::RetErr => true,
-            RetLog::Err => false,
-            RetLog::None => false,
+            Self::RetYieldErr | Self::RetErr => true,
+            Self::Err | Self::None => false,
         }
     }
 
     fn r#yield(&self) -> bool {
         match self {
-            RetLog::RetYieldErr => true,
-            RetLog::RetErr => false,
-            RetLog::Err => false,
-            RetLog::None => false,
+            Self::RetYieldErr => true,
+            Self::RetErr | Self::Err | Self::None => false,
         }
     }
 
     fn r#err(&self) -> bool {
         match self {
-            RetLog::RetYieldErr => true,
-            RetLog::RetErr => true,
-            RetLog::Err => true,
-            RetLog::None => false,
+            Self::RetYieldErr | Self::RetErr | Self::Err => true,
+            Self::None => false,
         }
     }
 
