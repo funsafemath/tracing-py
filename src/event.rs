@@ -20,6 +20,7 @@ use crate::{
     leak::{Leaker, VecLeaker},
 };
 
+// macro 2.0 not usable due to strict hygiene?
 macro_rules! py_event {
     ($fn_name:ident, $py_name:literal, $lvl:expr) => {
         #[pyfunction(name = $py_name)]
@@ -162,69 +163,59 @@ impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
     }
 }
 
-macro_rules! single_field_event {
-    ($mod:ident, $struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) => {
-        mod $mod {
-            use super::*;
+macro single_field_event($mod:ident, $struct_name:ident, $fn_create_name:ident, $fn_emit_name:ident, $field:literal) {
+    #[derive(Clone, Copy, Debug)]
+    pub(crate) struct $struct_name(&'static DefaultCallsite);
 
-            #[derive(Clone, Copy, Debug)]
-            pub(crate) struct $struct_name(&'static DefaultCallsite);
+    struct Action<'py> {
+        value: Bound<'py, PyAny>,
+        callsite: $struct_name,
+    }
 
-            struct Action<'py> {
-                value: Bound<'py, PyAny>,
-                callsite: $struct_name,
-            }
+    static FIELDS: &[&str] = &[$field];
 
-            static FIELDS: &[&str] = &[$field];
+    impl<'py> CallsiteAction for Action<'py> {
+        const KIND: Kind = Kind::EVENT;
 
-            impl<'py> CallsiteAction for Action<'py> {
-                const KIND: Kind = Kind::EVENT;
+        type ReturnType = ();
 
-                type ReturnType = ();
-
-                fn with_fields_and_values(
-                    self,
-                    f: impl FnOnce(
-                        &'static [&'static str],
-                        &[Option<&dyn Value>],
-                    ) -> Option<Self::ReturnType>,
-                ) -> Option<Self::ReturnType> {
-                    let value = PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from(self.value);
-                    f(FIELDS, &[Some(&(&value as &dyn Valuable) as &dyn Value)])
-                }
-
-                fn do_if_enabled(
-                    metadata: &'static Metadata,
-                    values: &ValueSet,
-                ) -> Self::ReturnType {
-                    Event::dispatch(metadata, values);
-                }
-            }
-
-            pub(crate) fn $fn_create_name(context: Context, level: Level) -> $struct_name {
-                $struct_name(callsite::get_or_init_callsite(
-                    context,
-                    level,
-                    FIELDS,
-                    Kind::EVENT,
-                ))
-            }
-
-            pub(crate) fn $fn_emit_name(
-                py: Python,
-                value: Bound<'_, PyAny>,
-                callsite: $struct_name,
-            ) -> Option<()> {
-                callsite::do_action(
-                    py,
-                    callsite.0.metadata().level().to_owned(),
-                    Action { value, callsite },
-                    Some(callsite.0),
-                )
-            }
+        fn with_fields_and_values(
+            self,
+            f: impl FnOnce(
+                &'static [&'static str],
+                &[Option<&dyn Value>],
+            ) -> Option<Self::ReturnType>,
+        ) -> Option<Self::ReturnType> {
+            let value = PyCachedValuable::<QuoteStrAndTmpl, TemplateRepr>::from(self.value);
+            f(FIELDS, &[Some(&(&value as &dyn Valuable) as &dyn Value)])
         }
-        pub(crate) use $mod::{$fn_create_name, $fn_emit_name, $struct_name};
-    };
+
+        fn do_if_enabled(metadata: &'static Metadata, values: &ValueSet) -> Self::ReturnType {
+            Event::dispatch(metadata, values);
+        }
+    }
+
+    pub(crate) fn $fn_create_name(context: Context, level: Level) -> $struct_name {
+        $struct_name(callsite::get_or_init_callsite(
+            context,
+            level,
+            FIELDS,
+            Kind::EVENT,
+        ))
+    }
+
+    pub(crate) fn $fn_emit_name(
+        py: Python,
+        value: Bound<'_, PyAny>,
+        callsite: $struct_name,
+    ) -> Option<()> {
+        callsite::do_action(
+            py,
+            callsite.0.metadata().level().to_owned(),
+            Action { value, callsite },
+            Some(callsite.0),
+        )
+    }
 }
 
 single_field_event!(ret_callsite, RetCallsite, ret_callsite, ret_event, "return");
