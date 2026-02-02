@@ -56,6 +56,7 @@ impl InstrumentedGenerator {
             }
             Err(err) => {
                 let err = err.into_bound_py_any(py)?;
+                // ret_callsite implies err_callsite, so we can do a nested check
                 if let Some(err_callsite) = self.err_callsite {
                     // todo: as i've already written in instrument.rs,
                     // events should use &Bound, not Bound, so clones aren't needed
