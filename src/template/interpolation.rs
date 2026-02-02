@@ -14,11 +14,11 @@ pub(crate) enum Conversion {
 }
 
 impl Conversion {
-    fn convert<'py, T>(&self, object: Bound<'py, T>) -> PyResult<Bound<'py, PyString>> {
+    fn convert<'py, T>(&self, object: &Bound<'py, T>) -> PyResult<Bound<'py, PyString>> {
         match self {
-            Conversion::Str => object.as_any().str(),
-            Conversion::Repr => object.as_any().repr(),
-            Conversion::Ascii => object.as_any().ascii(),
+            Self::Str => object.as_any().str(),
+            Self::Repr => object.as_any().repr(),
+            Self::Ascii => object.as_any().ascii(),
         }
     }
 }

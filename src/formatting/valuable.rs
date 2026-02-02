@@ -93,9 +93,7 @@ impl<S: StrFmt, T: TemplateFmt> Valuable for OwnedValuable<S, T> {
 // deferring any type checks until the value is required, so we don't waste time on filtered events
 // should we use cast instead of cast_exact? not sure if anyone subclasses primitives
 // maybe always use an UnquotedString, and use repr/str as the generic paramter instead?
-impl<'py, S: StrFmt, T: TemplateFmt> GetValue<OwnedValuable<S, T>, CachedValuable>
-    for Bound<'py, PyAny>
-{
+impl<S: StrFmt, T: TemplateFmt> GetValue<OwnedValuable<S, T>, CachedValuable> for Bound<'_, PyAny> {
     fn value(&self) -> OwnedValuable<S, T> {
         if self.is_none() {
             OwnedValuable::None
@@ -126,8 +124,8 @@ fn python_format(any: &Bound<'_, PyAny>, format_result: PyResult<Bound<'_, PyStr
         Result::Err(err) => err.write_unraisable(any.py(), Some(any)),
     }
 
-    match any.get_type().name() {
-        Result::Ok(name) => format!("<unprintable {name} object>"),
-        Result::Err(_) => "<unprintable object>".to_owned(),
-    }
+    any.get_type().name().map_or_else(
+        |_| "<unprintable object>".to_owned(),
+        |name| format!("<unprintable {name} object>"),
+    )
 }

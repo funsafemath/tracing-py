@@ -25,7 +25,7 @@ macro_rules! py_event {
     ($fn_name:ident, $py_name:literal, $lvl:expr) => {
         #[pyfunction(name = $py_name)]
         #[pyo3(signature = (message = None, fmt_args = None, **kwargs))]
-        pub(super) fn $fn_name(
+        pub(crate) fn $fn_name(
             py: Python<'_>,
             message: Option<Bound<'_, PyAny>>,
             fmt_args: Option<&Bound<'_, PyTuple>>,
@@ -105,7 +105,7 @@ pub(crate) fn leak_or_get_kwargs<'py>(
     (fields, values)
 }
 
-impl<'a, 'py> CallsiteAction for EventAction<'a, 'py> {
+impl CallsiteAction for EventAction<'_, '_> {
     const KIND: Kind = Kind::EVENT;
     type ReturnType = ();
 

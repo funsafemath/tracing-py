@@ -1,6 +1,11 @@
 #![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
 #![feature(decl_macro)]
+#![deny(clippy::perf)]
+#![warn(clippy::trivially_copy_pass_by_ref)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::ptr_arg)]
 
 mod cached;
 mod callsite;
@@ -26,21 +31,20 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 #[pymodule(name = "tracing")]
 mod tracing {
-    use super::*;
 
     #[pymodule_export]
-    use level::PyLevel;
+    use super::level::PyLevel;
 
     #[pymodule_export]
-    use event::{py_debug, py_error, py_info, py_trace, py_warn};
+    use super::event::{py_debug, py_error, py_info, py_trace, py_warn};
 
     #[pymodule_export]
-    use layer::{
+    use super::layer::{
         FmtLayer, Format,
         fmt::{NonBlocking, PyLogFile, span::PyFmtSpan},
         py_init,
     };
 
     #[pymodule_export]
-    use instrument::py_instrument;
+    use super::instrument::py_instrument;
 }

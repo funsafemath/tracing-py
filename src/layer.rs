@@ -18,27 +18,24 @@ trait ThreadSafeLayer = Layer<Registry> + Send + Sync;
 #[pyfunction(name = "init")]
 #[pyo3(signature = (layers = None))]
 pub(crate) fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()> {
-    let layers_with_guards = match layers {
-        Some(layers) => {
-            if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
-                layers
-                    .into_iter()
-                    .map(|x: Bound<'_, FmtLayer>| x.dyn_layer())
-                    .collect::<PyResult<Vec<(_, _)>>>()?
-            } else {
-                vec![layers.cast::<FmtLayer>()?.dyn_layer()?]
-            }
+    let layers_with_guards = if let Some(layers) = layers {
+        if let Ok(layers) = layers.extract::<Vec<Bound<'_, FmtLayer>>>() {
+            layers
+                .into_iter()
+                .map(|x: Bound<'_, FmtLayer>| x.dyn_layer())
+                .collect::<PyResult<Vec<(_, _)>>>()?
+        } else {
+            vec![layers.cast::<FmtLayer>()?.dyn_layer()?]
         }
-        None => {
-            // todo: ensure that this default layer is equal to the default FmtLayer()
-            let (writer, guard) = tracing_appender::non_blocking(stdout());
-            let layer = tracing_subscriber::fmt::layer()
-                .with_writer(writer)
-                .with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
-            let dyn_layer: Box<dyn ThreadSafeLayer> = Box::new(layer);
+    } else {
+        // todo: ensure that this default layer is equal to the default FmtLayer()
+        let (writer, guard) = tracing_appender::non_blocking(stdout());
+        let layer = tracing_subscriber::fmt::layer()
+            .with_writer(writer)
+            .with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
+        let dyn_layer: Box<dyn ThreadSafeLayer> = Box::new(layer);
 
-            vec![(dyn_layer, Some(guard))]
-        }
+        vec![(dyn_layer, Some(guard))]
     };
 
     let (layers, guards): (Vec<_>, Vec<_>) = layers_with_guards.into_iter().unzip();
@@ -74,7 +71,7 @@ trait PyGuardsMethods {
     fn drop_at_exit(self) -> PyResult<()>;
 }
 
-impl<'py> PyGuardsMethods for Bound<'py, PyWorkerGuardVec> {
+impl PyGuardsMethods for Bound<'_, PyWorkerGuardVec> {
     // todo: we can check if it's empty, and skip atexit setup if it is
     fn drop_at_exit(self) -> PyResult<()> {
         let closure = match PyCFunction::new_closure(self.py(), None, None, {

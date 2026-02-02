@@ -6,7 +6,7 @@ use pyo3::{
 };
 
 pub(crate) macro mk_import($fn_name:ident, $module:expr, $item:expr, $type:ty) {
-    pub(crate) fn $fn_name<'py>(py: Python<'py>) -> &'py Bound<'py, $type> {
+    pub(crate) fn $fn_name(py: Python<'_>) -> &Bound<'_, $type> {
         static LOCK: PyOnceLock<Py<$type>> = PyOnceLock::new();
 
         get_or_import(py, &LOCK, $module, $item)
