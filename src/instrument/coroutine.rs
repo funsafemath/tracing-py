@@ -43,7 +43,7 @@ impl InstrumentedCoroutine {
 impl InstrumentedCoroutine {
     // there must be a better way to set the superclass
     // also this does not get added to asyncio coroutine classes cache for some reason? or maybe it is, not sure
-    // failed attemps: classattr __class__: unsettable in pyo3?, classattr __bases__: coroutine can't be used as a base
+    // failed attempts: classattr __class__: unsettable in pyo3?, classattr __bases__: coroutine can't be used as a base
     #[getter]
     fn __class__<'py>(&self, py: Python<'py>) -> &Bound<'py, PyType> {
         get_coroutine_type(py)
