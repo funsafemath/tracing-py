@@ -5,7 +5,7 @@ use crate::{
     event::{self, ErrCallsite, RetCallsite, YieldCallsite},
     ext::any::infallible_attr,
     imports::get_async_generator_type,
-    instrument::{coroutine::InstrumentedCoroutine, generator::GeneratorType},
+    instrument::fn_types::{coroutine::InstrumentedCoroutine, generator::GeneratorType},
 };
 
 // todo: impl all async generator methods, use proper inner type
