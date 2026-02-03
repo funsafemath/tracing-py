@@ -41,18 +41,19 @@ impl InstrumentedAsyncGenerator {
         get_async_generator_type(py)
     }
 
-    // todo: use c anext next method directly (the performance is already great actually)
+    // todo: use c anext method directly
     fn __anext__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         // it's an async function, so the first invocation should never fail, so we don't need to log an error
         //
         // technically it may be a normal function that returns a coroutine that actually does something
-        // and maybe logs something, and in that case we'd want to enter the span before calling __anext__,
+        // and maybe even logs something, and in that case we'd want to enter the span before calling __anext__,
         // but I'm not sure if it worth implementing, as this will also generate an enter/exit event in case of false positives
         let coro_next = infallible_attr!(self.inner, "__anext__", py).call0()?;
 
         InstrumentedCoroutine::new(
             coro_next.into(),
             self.span.clone(),
+            // normal coroutine return <=> async generator yield
             self.yield_callsite
                 .map(event::CallsiteCast::cast::<RetCallsite>),
             self.err_callsite,
