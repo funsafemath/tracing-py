@@ -5,7 +5,7 @@ use crate::{
     event::{ErrCallsite, RetCallsite, YieldCallsite},
     ext::any::infallible_attr,
     imports::get_coroutine_type,
-    instrument::generator::InstrumentedGenerator,
+    instrument::generator::{GeneratorType, InstrumentedGenerator},
 };
 
 #[pyclass]
@@ -15,6 +15,7 @@ pub struct InstrumentedCoroutine {
     ret_callsite: Option<RetCallsite>,
     err_callsite: Option<ErrCallsite>,
     yield_callsite: Option<YieldCallsite>,
+    gen_type: GeneratorType,
 }
 
 impl InstrumentedCoroutine {
@@ -24,6 +25,7 @@ impl InstrumentedCoroutine {
         ret_callsite: Option<RetCallsite>,
         err_callsite: Option<ErrCallsite>,
         yield_callsite: Option<YieldCallsite>,
+        gen_type: GeneratorType,
     ) -> Self {
         Self {
             inner: coroutine,
@@ -31,6 +33,7 @@ impl InstrumentedCoroutine {
             ret_callsite,
             err_callsite,
             yield_callsite,
+            gen_type,
         }
     }
 }
@@ -64,6 +67,7 @@ impl InstrumentedCoroutine {
             self.ret_callsite,
             self.err_callsite,
             self.yield_callsite,
+            self.gen_type,
         )
         .into_py_any(py)
     }

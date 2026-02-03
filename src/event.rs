@@ -163,9 +163,24 @@ impl CallsiteAction for EventAction<'_, '_> {
     }
 }
 
+trait SingleFieldCallsite {
+    fn callsite(&self) -> &'static DefaultCallsite;
+    fn from_callsite(callsite: &'static DefaultCallsite) -> Self;
+}
+
 macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field:literal) {
     #[derive(Clone, Copy, Debug)]
     pub struct $struct(&'static DefaultCallsite);
+
+    impl SingleFieldCallsite for $struct {
+        fn callsite(&self) -> &'static DefaultCallsite {
+            self.0
+        }
+
+        fn from_callsite(callsite: &'static DefaultCallsite) -> Self {
+            Self(callsite)
+        }
+    }
 
     struct Action<'py>(Bound<'py, PyAny>);
 
@@ -218,3 +233,13 @@ macro single_field_event($struct:ident, $fn_create:ident, $fn_emit:ident, $field
 single_field_event!(RetCallsite, ret_callsite, ret_event, "return");
 single_field_event!(ErrCallsite, err_callsite, err_event, "exception");
 single_field_event!(YieldCallsite, yield_callsite, yield_event, "yield");
+
+pub trait CallsiteCast: SingleFieldCallsite {
+    fn cast<T: SingleFieldCallsite>(self) -> T;
+}
+
+impl<S: SingleFieldCallsite> CallsiteCast for S {
+    fn cast<T: SingleFieldCallsite>(self) -> T {
+        T::from_callsite(self.callsite())
+    }
+}
