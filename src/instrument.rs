@@ -1,6 +1,5 @@
-mod async_generator;
-mod coroutine;
-mod generator;
+mod fn_types;
+mod log_parameters;
 mod parameter;
 mod py_signature;
 mod signature;
@@ -9,7 +8,6 @@ use std::ops::Index;
 
 use pyo3::{
     IntoPyObjectExt,
-    exceptions::PyValueError,
     prelude::*,
     types::{PyCFunction, PyDict, PyFrame, PyFunction, PyTuple},
 };
@@ -19,42 +17,22 @@ use tracing_core::Kind;
 
 use crate::{
     callsite::{self, Context},
-    event::{self, ErrCallsite, RetCallsite, YieldCallsite, ret_event},
+    event::{self, ret_event},
     ext::{frame::UnboundPyFrameMethodsExt, function::PyFunctionMethodsExt},
-    imports::{get_async_generator_type, get_coroutine_type, get_generator_type},
     instrument::{
-        async_generator::InstrumentedAsyncGenerator,
-        coroutine::InstrumentedCoroutine,
-        generator::{GeneratorType, InstrumentedGenerator},
+        fn_types::{
+            FunctionType,
+            async_generator::InstrumentedAsyncGenerator,
+            coroutine::InstrumentedCoroutine,
+            generator::{GeneratorType, InstrumentedGenerator},
+        },
+        log_parameters::RetLog,
         signature::extract_signature,
     },
     leak::VecLeaker,
     level::PyLevel,
     span::span,
 };
-
-enum FunctionType {
-    Normal,
-    Generator,
-    Async,
-    AsyncGenerator,
-}
-
-impl FunctionType {
-    fn guess_from_return_value(ret_val: &Bound<'_, PyAny>) -> PyResult<Self> {
-        let py = ret_val.py();
-
-        Ok(if ret_val.is_instance(get_coroutine_type(py))? {
-            Self::Async
-        } else if ret_val.is_instance(get_generator_type(py))? {
-            Self::Generator
-        } else if ret_val.is_instance(get_async_generator_type(py))? {
-            Self::AsyncGenerator
-        } else {
-            Self::Normal
-        })
-    }
-}
 
 // todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
 // todo: allow instrumenting native functions
@@ -246,85 +224,15 @@ impl Default for InstrumentOptions {
     }
 }
 
-#[derive(Default, Clone)]
-enum RetLog {
-    RetYieldErr,
-    RetErr,
-    Err,
-    #[default]
-    None,
-}
-
-impl RetLog {
-    fn from_opts(ret: bool, no_yield: bool, err_only: bool) -> PyResult<Self> {
-        match (ret, no_yield, err_only) {
-            // err_only implies no_yield & !ret
-            (true, true, true) => Err(PyValueError::new_err(
-                "`err_only` cannot be used with `ret` or `no_yield`",
-            )),
-            (true, true, false) => Ok(Self::RetErr),
-            // err_only implies !ret
-            (true, false, true) => Err(PyValueError::new_err(
-                "`err_only` cannot be used with `ret`",
-            )),
-            (true, false, false) => Ok(Self::RetYieldErr),
-            // err_only implies no_yield
-            (false, true, true) => Err(PyValueError::new_err(
-                "`err_only` cannot be used with `no_yield`",
-            )),
-            // !ret implies no_yield
-            (false, true, false) => Err(PyValueError::new_err(
-                "`no_yield` cannot be used without `ret`",
-            )),
-            (false, false, true) => Ok(Self::Err),
-            (false, false, false) => Ok(Self::None),
-        }
-    }
-
-    fn ret(&self) -> bool {
-        match self {
-            Self::RetYieldErr | Self::RetErr => true,
-            Self::Err | Self::None => false,
-        }
-    }
-
-    fn r#yield(&self) -> bool {
-        match self {
-            Self::RetYieldErr => true,
-            Self::RetErr | Self::Err | Self::None => false,
-        }
-    }
-
-    fn r#err(&self) -> bool {
-        match self {
-            Self::RetYieldErr | Self::RetErr | Self::Err => true,
-            Self::None => false,
-        }
-    }
-
-    fn r#callsites(
-        &self,
-        ctx: Context<'_>,
-        level: Level,
-    ) -> (
-        Option<RetCallsite>,
-        Option<YieldCallsite>,
-        Option<ErrCallsite>,
-    ) {
-        let ret_callsite = self.ret().then(|| event::ret_callsite(ctx.clone(), level));
-        let yield_callsite = self
-            .r#yield()
-            .then(|| event::yield_callsite(ctx.clone(), level));
-        let err_callsite = self.err().then(|| event::err_callsite(ctx, level));
-        (ret_callsite, yield_callsite, err_callsite)
-    }
-}
-
 #[pyfunction(name = "instrument")]
 #[pyo3(signature = (func = None, /, *, level = PyLevel::Info, skip = Vec::new(), skip_all = false, ret = false, ret_err_only = false, no_yield = false))]
 #[allow(
     clippy::too_many_arguments,
     reason = "no it's not enough for an average python function"
+)]
+#[allow(
+    clippy::fn_params_excessive_bools,
+    reason = "it's python and the arguments are kw-only, so `you can't remember argument order` does not apply here"
 )]
 pub fn py_instrument<'py>(
     py: Python<'py>,
