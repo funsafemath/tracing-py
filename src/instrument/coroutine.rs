@@ -5,7 +5,7 @@ use crate::{
     event::{ErrCallsite, RetCallsite, YieldCallsite},
     ext::any::infallible_attr,
     imports::get_coroutine_type,
-    instrument::generator::InstrumentedGenerator,
+    instrument::generator::{GeneratorType, InstrumentedGenerator},
 };
 
 #[pyclass]
@@ -15,6 +15,7 @@ pub struct InstrumentedCoroutine {
     ret_callsite: Option<RetCallsite>,
     err_callsite: Option<ErrCallsite>,
     yield_callsite: Option<YieldCallsite>,
+    gen_type: GeneratorType,
 }
 
 impl InstrumentedCoroutine {
@@ -24,6 +25,7 @@ impl InstrumentedCoroutine {
         ret_callsite: Option<RetCallsite>,
         err_callsite: Option<ErrCallsite>,
         yield_callsite: Option<YieldCallsite>,
+        gen_type: GeneratorType,
     ) -> Self {
         Self {
             inner: coroutine,
@@ -31,6 +33,7 @@ impl InstrumentedCoroutine {
             ret_callsite,
             err_callsite,
             yield_callsite,
+            gen_type,
         }
     }
 }
@@ -40,7 +43,7 @@ impl InstrumentedCoroutine {
 impl InstrumentedCoroutine {
     // there must be a better way to set the superclass
     // also this does not get added to asyncio coroutine classes cache for some reason? or maybe it is, not sure
-    // failed attemps: classattr __class__: unsettable in pyo3?, classattr __bases__: coroutine can't be used as a base
+    // failed attempts: classattr __class__: unsettable in pyo3?, classattr __bases__: coroutine can't be used as a base
     #[getter]
     fn __class__<'py>(&self, py: Python<'py>) -> &Bound<'py, PyType> {
         get_coroutine_type(py)
@@ -64,6 +67,7 @@ impl InstrumentedCoroutine {
             self.ret_callsite,
             self.err_callsite,
             self.yield_callsite,
+            self.gen_type,
         )
         .into_py_any(py)
     }
