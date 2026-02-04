@@ -1,6 +1,7 @@
 #![feature(exact_size_is_empty)]
 #![feature(trait_alias)]
 #![feature(decl_macro)]
+#![warn(clippy::allow_attributes)]
 
 mod cached;
 mod callsite;

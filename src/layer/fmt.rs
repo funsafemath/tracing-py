@@ -26,7 +26,7 @@ pub struct FmtLayer {
 
 #[pymethods]
 impl FmtLayer {
-    #[allow(
+    #[expect(
         clippy::too_many_arguments,
         reason = "how else am I supposed to implement a python constructor?"
     )]
