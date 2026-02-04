@@ -5,7 +5,7 @@ use crate::{
     event::{ErrCallsite, RetCallsite, YieldCallsite},
     ext::any::infallible_attr,
     imports::get_coroutine_type,
-    instrument::generator::{GeneratorType, InstrumentedGenerator},
+    instrument::fn_types::generator::{GeneratorType, InstrumentedGenerator},
 };
 
 #[pyclass]
