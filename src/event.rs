@@ -116,11 +116,20 @@ impl CallsiteAction for EventAction<'_, '_> {
         self,
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<()>,
     ) -> Option<()> {
-        let (mut fields, values) = leak_or_get_kwargs(None, self.kwargs);
+        let mut fields = vec![];
+        let mut values = vec![];
+
+        if let Some(kwargs) = self.kwargs {
+            let mut leaker = Leaker::acquire();
+
+            for (key, value) in kwargs.iter() {
+                fields.push(leaker.leak_or_get(key.to_string()));
+                values.push(PyCachedValuable::<QuoteStrAndTmpl, TemplateInterpolate>::from(value));
+            }
+        }
 
         match self.message {
             Message::Any(Some(_)) | Message::PercentFormatted(_) => {
-                // todo: do not use insert
                 fields.insert(0, "message");
             }
             Message::Any(None) => {}
