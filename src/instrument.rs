@@ -226,11 +226,11 @@ impl Default for InstrumentOptions {
 
 #[pyfunction(name = "instrument")]
 #[pyo3(signature = (func = None, /, *, level = PyLevel::Info, skip = Vec::new(), skip_all = false, ret = false, ret_err_only = false, no_yield = false))]
-#[allow(
+#[expect(
     clippy::too_many_arguments,
     reason = "no it's not enough for an average python function"
 )]
-#[allow(
+#[expect(
     clippy::fn_params_excessive_bools,
     reason = "it's python and the arguments are kw-only, so `you can't remember argument order` does not apply here"
 )]
