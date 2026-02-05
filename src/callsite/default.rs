@@ -73,13 +73,16 @@ pub fn new_callsite(
 
         let inspector = Inspector::new(&frame);
 
+        // using module() for both file and module for now
+        let file = leaker.leak_or_get(inspector.module());
+
         leak(Metadata::new(
             name,
             target,
             level,
-            Some(leaker.leak_or_get(inspector.module())),
+            Some(file),
             Some(line),
-            Some(leaker.leak_or_get(inspector.module())),
+            Some(file),
             FieldSet::new(fields, Identifier(empty_callsite)),
             Kind::from(kind),
         ))
