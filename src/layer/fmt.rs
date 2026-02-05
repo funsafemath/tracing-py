@@ -1,11 +1,19 @@
+pub mod file;
+pub mod rotation;
 pub mod span;
 pub mod to_layer;
 
-use pyo3::{FromPyObject, Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
+use pyo3::prelude::*;
 use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
+use crate::{
+    layer::fmt::{
+        file::{LogFile, NonBlocking},
+        span::PyFmtSpan,
+    },
+    level::PyLevel,
+};
 
 #[pyclass]
 pub struct FmtLayer {
@@ -63,8 +71,8 @@ impl FmtLayer {
         with_line_number: Option<bool>,
         with_target: Option<bool>,
         with_thread_ids: Option<bool>,
-    ) -> PyResult<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             log_level: Level::from(log_level),
             file,
             format,
@@ -78,7 +86,7 @@ impl FmtLayer {
             with_line_number,
             with_target,
             with_thread_ids,
-        })
+        }
     }
 }
 
@@ -93,44 +101,4 @@ pub enum Format {
     Pretty,
     #[pyo3(name = "JSON")]
     Json,
-}
-
-#[pyclass]
-#[derive(Clone, Copy)]
-pub enum NonBlocking {
-    #[pyo3(name = "LOSSY")]
-    Lossy,
-    #[pyo3(name = "COMPLETE")]
-    Complete,
-}
-
-enum LogFile {
-    Stdout,
-    Stderr,
-    Path(String),
-}
-
-impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
-    type Error = PyErr;
-
-    fn extract(obj: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        Ok(if let Ok(log_file) = obj.cast::<PyLogFile>() {
-            match *log_file.borrow() {
-                PyLogFile::Stdout => Self::Stdout,
-                PyLogFile::Stderr => Self::Stderr,
-            }
-        } else {
-            let log_file = obj.extract::<String>()?;
-            Self::Path(log_file)
-        })
-    }
-}
-
-#[pyclass(name = "File")]
-#[derive(Clone)]
-pub enum PyLogFile {
-    #[pyo3(name = "STDOUT")]
-    Stdout,
-    #[pyo3(name = "STDERR")]
-    Stderr,
 }
