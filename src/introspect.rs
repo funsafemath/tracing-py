@@ -1,18 +1,12 @@
 use std::path::Path;
 
 use pyo3::{
-    ffi::{self},
+    ffi::{self, PyEval_GetGlobals},
     prelude::*,
     types::{PyCode, PyFrame, PyString},
 };
 
 use crate::ext::{code::PyCodeMethodsExt, frame::PyFrameMethodsExt};
-
-unsafe extern "C" {
-    // todo: use deprecated PyEval_GetGlobals to support python < 3.13
-    // or don't use globals at all
-    pub fn PyEval_GetFrameGlobals() -> *mut ffi::PyObject;
-}
 
 #[non_exhaustive]
 pub struct Inspector<'a, 'py> {
@@ -44,25 +38,19 @@ impl<'a, 'py> Inspector<'a, 'py> {
     //
     // maybe i'll fix it later, but anyway it's evaluated only a single time for each callsite
     pub fn module(&self) -> String {
-        // SAFETY: safe to call, null check is at Py::from_owned_ptr
-        let globals = unsafe { PyEval_GetFrameGlobals() };
-
-        // SAFETY: safe, PyEval_GetFrameGlobals returns an owned ref
-        let globals = unsafe { Py::from_owned_ptr(self.py, globals) };
-        let globals: &Bound<'_, PyAny> = globals.bind(self.py);
-        let mod_name = PyAnyMethods::get_item(globals, "__name__")
+        // SAFETY: PyEval_GetGlobals returns an borrowed ref:
+        // https://docs.python.org/3/c-api/reflection.html#c.PyEval_GetGlobals
+        let globals = unsafe { Bound::from_borrowed_ptr(self.py, PyEval_GetGlobals()) };
+        let mod_name = PyAnyMethods::get_item(&globals, "__name__")
             .expect("__name__ global variable must exist");
 
         let path_length = if mod_name.is_none() {
             0
         } else {
-            let s: Py<PyString> = mod_name
+            let s: Bound<PyString> = mod_name
                 .extract()
                 .expect("__name__ type must be str or None");
-            s.to_string_lossy(self.py)
-                .chars()
-                .filter(|x| *x == '.')
-                .count()
+            s.to_string_lossy().chars().filter(|x| *x == '.').count()
         } + 1;
 
         let file = self.code.filename();
