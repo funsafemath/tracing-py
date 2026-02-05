@@ -37,18 +37,6 @@ pub fn get_or_import<'py, 'a, T: PyTypeCheck>(
         .bind(py)
 }
 
-// todo: use this to make templates optional, so library works on python < 3.14
-fn get_or_import_maybe<'py, T: PyTypeCheck>(
-    py: Python<'py>,
-    lock: &'static PyOnceLock<Option<Py<T>>>,
-    module: &'static str,
-    item: &'static str,
-) -> Option<&'static Bound<'py, T>> {
-    lock.get_or_init(py, || import(module, item).ok())
-        .as_ref()
-        .map(|x| x.bind(py))
-}
-
 fn import<T: PyTypeCheck>(module: &str, item: &str) -> PyResult<Py<T>> {
     Python::attach(|py: Python<'_>| {
         let module = py.import(module)?;

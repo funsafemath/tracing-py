@@ -108,10 +108,13 @@ impl<S: StrFmt, T: TemplateFmt> GetValue<OwnedValuable<S, T>, CachedValuable> fo
             OwnedValuable::Float(PyFloatMethods::value(float))
         } else if let Ok(bool) = self.cast_exact::<PyBool>() {
             OwnedValuable::Bool(bool.is_true())
-        } else if let Ok(tmpl) = self.cast_exact::<PyTemplate>() {
-            T::make(tmpl)
         } else if let Ok(str) = self.cast_exact::<PyString>() {
             S::make(str.to_string())
+        // awful
+        } else if PyTemplate::is_supported(self.py())
+            && let Ok(tmpl) = self.cast_exact::<PyTemplate>()
+        {
+            T::make(tmpl)
         } else {
             OwnedValuable::<S, T>::UnquotedStr(python_format(self, self.repr()), PhantomData)
         }
