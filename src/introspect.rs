@@ -54,6 +54,7 @@ impl<'a, 'py> Inspector<'a, 'py> {
         } + 1;
 
         let file = self.code.filename();
+        dbg!(&file);
         let file = file.to_string_lossy().into_owned();
         let path = Path::new(&file).to_owned();
 
