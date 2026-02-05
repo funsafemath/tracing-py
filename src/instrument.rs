@@ -19,7 +19,11 @@ use crate::{
     callsite::{self, Context, is_enabled},
     event::{self, ret_event},
     ext::{frame::UnboundPyFrameMethodsExt, function::PyFunctionMethodsExt},
-    instrument::{fn_types::FunctionType, log_parameters::RetLog, signature::extract_signature},
+    instrument::{
+        fn_types::FunctionType,
+        log_parameters::{LevelOverrides, RetLog},
+        signature::extract_signature,
+    },
     leak::VecLeaker,
     level::PyLevel,
     span::span,
@@ -27,11 +31,11 @@ use crate::{
 
 // todo: set function name/signature (functools.wraps doesn't work on native functions, wrapt is too slow)
 // todo: allow instrumenting native functions
-// todo: skip arg extraction if span is not enabled
 // todo: warn/throw an error if attempting to skip a non-existent parameter
 // todo: warn/throw an error if trying to use log_yield on non-generator function
 //
 // overhead is predominantly caused by Span::new call, so optimizing this function is not a priority
+// 100 lines long spaghetti code lol
 fn instrument<'py>(
     py: Python<'py>,
     function: Bound<'py, PyFunction>,
@@ -54,9 +58,10 @@ fn instrument<'py>(
     let ctx = Context::FrameAndCode { code, frame };
 
     let (ret_callsite, yield_callsite, err_callsite) =
-        options.ret_log.callsites(ctx.clone(), options.level);
+        options.ret_log.callsites(ctx.clone(), &options.levels);
 
-    let callsite = callsite::get_or_init_callsite(ctx, options.level, param_names, Kind::SPAN);
+    let span_callsite =
+        callsite::get_or_init_callsite(ctx, options.levels.span(), param_names, Kind::SPAN);
 
     let retain_indices = if options.skip_all {
         vec![]
@@ -86,7 +91,7 @@ fn instrument<'py>(
             let function = function.bind(args.py());
 
             // todo: rework CallsiteAction, probably make it separate for Event and Callsite, and move this line into it
-            if !is_enabled(callsite) {
+            if !is_enabled(span_callsite) {
                 return function.call(args, kwargs).map(Bound::unbind);
             }
 
@@ -118,7 +123,13 @@ fn instrument<'py>(
             };
 
             // todo: this should be Span, not Option<CallsiteAction> after CallsiteAction is reworked
-            let span = span(py, options.level, signature.param_names(), bound, callsite);
+            let span = span(
+                py,
+                options.levels.span(),
+                signature.param_names(),
+                bound,
+                span_callsite,
+            );
 
             let (res, fn_type) = {
                 let _entered = span.as_ref().map(|x| x.enter());
@@ -157,16 +168,12 @@ fn instrument<'py>(
 }
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct InstrumentOptions {
-    level: Level,
+    levels: LevelOverrides,
     skip: RapidHashSet<String>,
     skip_all: bool,
     ret_log: RetLog,
-}
-
-impl InstrumentOptions {
-    const DEFAULT_LEVEL: Level = Level::INFO;
 }
 
 #[pymethods]
@@ -180,19 +187,10 @@ impl InstrumentOptions {
     }
 }
 
-impl Default for InstrumentOptions {
-    fn default() -> Self {
-        Self {
-            level: Self::DEFAULT_LEVEL,
-            skip: RapidHashSet::default(),
-            skip_all: Default::default(),
-            ret_log: RetLog::default(),
-        }
-    }
-}
-
 #[pyfunction(name = "instrument")]
-#[pyo3(signature = (func = None, /, *, level = PyLevel::Info, skip = Vec::new(), skip_all = false, ret = false, ret_err_only = false, no_yield = false))]
+#[pyo3(signature = (func = None, /, *, level = PyLevel::Info, skip = Vec::new(),
+skip_all = false, ret = false, ret_err_only = false, no_yield = false,
+ret_level = None, err_level = None, yield_level = None))]
 #[expect(
     clippy::too_many_arguments,
     reason = "no it's not enough for an average python function"
@@ -210,9 +208,17 @@ pub fn py_instrument<'py>(
     ret: bool,
     ret_err_only: bool,
     no_yield: bool,
+    ret_level: Option<PyLevel>,
+    err_level: Option<PyLevel>,
+    yield_level: Option<PyLevel>,
 ) -> PyResult<Bound<'py, PyAny>> {
     let options = InstrumentOptions {
-        level: Level::from(level),
+        levels: LevelOverrides {
+            default: level.into(),
+            ret: ret_level.map(Level::from),
+            err: err_level.map(Level::from),
+            r#yield: yield_level.map(Level::from),
+        },
         skip: skip.into_iter().collect(),
         skip_all,
         ret_log: RetLog::from_opts(ret, no_yield, ret_err_only)?,
