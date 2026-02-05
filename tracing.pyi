@@ -194,6 +194,9 @@ def instrument(
     ret: bool = False,
     ret_err_only: bool = False,
     no_yield: bool = False,
+    ret_level: Level | None = None,
+    err_level: Level | None = None,
+    yield_level: Level | None = None,
 ) -> T: ...
 
 __all__ = [
