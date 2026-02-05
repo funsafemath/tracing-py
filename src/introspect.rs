@@ -38,7 +38,7 @@ impl<'a, 'py> Inspector<'a, 'py> {
     //
     // maybe i'll fix it later, but anyway it's evaluated only a single time for each callsite
     pub fn module(&self) -> String {
-        // SAFETY: PyEval_GetFrameGlobals returns an borrowed ref:
+        // SAFETY: PyEval_GetGlobals returns an borrowed ref:
         // https://docs.python.org/3/c-api/reflection.html#c.PyEval_GetGlobals
         let globals = unsafe { Bound::from_borrowed_ptr(self.py, PyEval_GetGlobals()) };
         let mod_name = PyAnyMethods::get_item(&globals, "__name__")
