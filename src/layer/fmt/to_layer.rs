@@ -5,7 +5,10 @@ use std::{
 
 use pyo3::{Bound, PyResult};
 use tracing::Level;
-use tracing_appender::non_blocking::{NonBlockingBuilder, WorkerGuard};
+use tracing_appender::{
+    non_blocking::{NonBlockingBuilder, WorkerGuard},
+    rolling::RollingFileAppender,
+};
 use tracing_core::LevelFilter;
 use tracing_subscriber::{
     Layer, Registry,
@@ -17,7 +20,7 @@ use tracing_subscriber::{
 
 use crate::layer::{
     ThreadSafeLayer,
-    fmt::{FmtLayer, Format, LogFile, NonBlocking},
+    fmt::{FmtLayer, Format, LogFile, file::NonBlocking},
 };
 
 pub trait ToDynLayer {
@@ -188,47 +191,23 @@ where
         };
 
         let (writer, guard) = match file {
-            LogFile::Stdout => {
-                let (writer, guard) = builder.finish(stdout());
-                (
-                    set_without_time_and_rest(
-                        layer.with_writer(writer),
-                        level,
-                        format,
-                        without_time,
-                    ),
-                    guard,
-                )
-            }
-            LogFile::Stderr => {
-                let (writer, guard) = builder.finish(stderr());
-                (
-                    set_without_time_and_rest(
-                        layer.with_writer(writer),
-                        level,
-                        format,
-                        without_time,
-                    ),
-                    guard,
-                )
-            }
+            LogFile::Stdout => builder.finish(stdout()),
+            LogFile::Stderr => builder.finish(stderr()),
             LogFile::Path(path) => {
                 let file = opts.open(path)?;
-                let (writer, guard) = builder.finish(file);
-                (
-                    set_without_time_and_rest(
-                        layer.with_writer(writer),
-                        level,
-                        format,
-                        without_time,
-                    ),
-                    guard,
-                )
+                builder.finish(file)
             }
+            LogFile::Rolling(rolling) => builder.finish(RollingFileAppender::new(
+                rolling.rotation.clone(),
+                rolling.dir.clone(),
+                rolling.prefix.clone(),
+            )),
         };
-        (writer, Some(guard))
+        let layer =
+            set_without_time_and_rest(layer.with_writer(writer), level, format, without_time);
+        (layer, Some(guard))
     } else {
-        let writer = match file {
+        let layer = match file {
             LogFile::Stdout => {
                 set_without_time_and_rest(layer.with_writer(stdout), level, format, without_time)
             }
@@ -239,8 +218,16 @@ where
                 let file = opts.open(path)?;
                 set_without_time_and_rest(layer.with_writer(file), level, format, without_time)
             }
+            LogFile::Rolling(rolling) => {
+                let rolling = RollingFileAppender::new(
+                    rolling.rotation.clone(),
+                    rolling.dir.clone(),
+                    rolling.prefix.clone(),
+                );
+                set_without_time_and_rest(layer.with_writer(rolling), level, format, without_time)
+            }
         };
-        (writer, None)
+        (layer, None)
     })
 }
 // todo: rewrite functions above using macros
