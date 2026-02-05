@@ -57,7 +57,6 @@ impl InstrumentedAsyncGenerator {
             self.yield_callsite
                 .map(event::CallsiteCast::cast::<RetCallsite>),
             self.err_callsite,
-            None,
             GeneratorType::AsyncGeneratorCoroutine,
         )
         .into_bound_py_any(py)

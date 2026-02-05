@@ -16,19 +16,10 @@ use tracing::{Level, error};
 use tracing_core::Kind;
 
 use crate::{
-    callsite::{self, Context},
+    callsite::{self, Context, is_enabled},
     event::{self, ret_event},
     ext::{frame::UnboundPyFrameMethodsExt, function::PyFunctionMethodsExt},
-    instrument::{
-        fn_types::{
-            FunctionType,
-            async_generator::InstrumentedAsyncGenerator,
-            coroutine::InstrumentedCoroutine,
-            generator::{GeneratorType, InstrumentedGenerator},
-        },
-        log_parameters::RetLog,
-        signature::extract_signature,
-    },
+    instrument::{fn_types::FunctionType, log_parameters::RetLog, signature::extract_signature},
     leak::VecLeaker,
     level::PyLevel,
     span::span,
@@ -94,6 +85,11 @@ fn instrument<'py>(
 
             let function = function.bind(args.py());
 
+            // todo: rework CallsiteAction, probably make it separate for Event and Callsite, and move this line into it
+            if !is_enabled(callsite) {
+                return function.call(args, kwargs).map(Bound::unbind);
+            }
+
             let bound = if retain_indices.is_empty() {
                 vec![]
             } else {
@@ -121,6 +117,7 @@ fn instrument<'py>(
                 bound_skipped
             };
 
+            // todo: this should be Span, not Option<CallsiteAction> after CallsiteAction is reworked
             let span = span(py, options.level, signature.param_names(), bound, callsite);
 
             let (res, fn_type) = {
@@ -153,37 +150,7 @@ fn instrument<'py>(
 
             // todo: find out how can into_py_any fail and log errors & propagate return value
             // if there's a real situation where is does fail
-            Ok(match fn_type {
-                FunctionType::Normal => res.unbind(),
-                FunctionType::Generator => InstrumentedGenerator::new(
-                    res.unbind(),
-                    span,
-                    ret_callsite,
-                    err_callsite,
-                    yield_callsite,
-                    GeneratorType::Normal,
-                )
-                .into_py_any(py)?,
-                FunctionType::Async => {
-                    // yield_callsite in this case will just log <Future Pending> on (some) await points, which isn't useful
-                    InstrumentedCoroutine::new(
-                        res.unbind(),
-                        span,
-                        ret_callsite,
-                        err_callsite,
-                        None,
-                        GeneratorType::Normal,
-                    )
-                    .into_py_any(py)?
-                }
-                FunctionType::AsyncGenerator => InstrumentedAsyncGenerator::new(
-                    res.unbind(),
-                    span,
-                    err_callsite,
-                    yield_callsite,
-                )
-                .into_py_any(py)?,
-            })
+            fn_type.instrument_ret_val(res, span, ret_callsite, err_callsite, yield_callsite)
         },
     )?
     .into_any())
