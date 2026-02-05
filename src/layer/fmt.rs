@@ -1,11 +1,16 @@
+pub mod rotation;
 pub mod span;
 pub mod to_layer;
 
-use pyo3::{FromPyObject, Py, PyAny, PyErr, PyResult, Python, pyclass, pymethods};
+use pyo3::{exceptions::PyTypeError, prelude::*};
 use tracing::Level;
+use tracing_appender::rolling::Rotation;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use crate::{layer::fmt::span::PyFmtSpan, level::PyLevel};
+use crate::{
+    layer::fmt::{rotation::PyRotation, span::PyFmtSpan},
+    level::PyLevel,
+};
 
 #[pyclass]
 pub struct FmtLayer {
@@ -63,8 +68,8 @@ impl FmtLayer {
         with_line_number: Option<bool>,
         with_target: Option<bool>,
         with_thread_ids: Option<bool>,
-    ) -> PyResult<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             log_level: Level::from(log_level),
             file,
             format,
@@ -78,7 +83,7 @@ impl FmtLayer {
             with_line_number,
             with_target,
             with_thread_ids,
-        })
+        }
     }
 }
 
@@ -108,21 +113,27 @@ enum LogFile {
     Stdout,
     Stderr,
     Path(String),
+    Rolling(PyRollingLog),
 }
 
 impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
     type Error = PyErr;
 
     fn extract(obj: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        Ok(if let Ok(log_file) = obj.cast::<PyLogFile>() {
-            match *log_file.borrow() {
+        if let Ok(log_file) = obj.cast::<PyLogFile>() {
+            Ok(match *log_file.borrow() {
                 PyLogFile::Stdout => Self::Stdout,
                 PyLogFile::Stderr => Self::Stderr,
-            }
+            })
+        } else if let Ok(rolling) = obj.extract::<PyRollingLog>() {
+            Ok(Self::Rolling(rolling))
+        } else if let Ok(path) = obj.extract::<String>() {
+            Ok(Self::Path(path))
         } else {
-            let log_file = obj.extract::<String>()?;
-            Self::Path(log_file)
-        })
+            Err(PyTypeError::new_err(
+                "expected a File, a RollingLog, or a string",
+            ))
+        }
     }
 }
 
@@ -133,4 +144,24 @@ pub enum PyLogFile {
     Stdout,
     #[pyo3(name = "STDERR")]
     Stderr,
+}
+
+#[pyclass(name = "RollingLog")]
+#[derive(Clone)]
+pub struct PyRollingLog {
+    dir: String,
+    prefix: String,
+    rotation: Rotation,
+}
+
+#[pymethods]
+impl PyRollingLog {
+    #[new]
+    fn new(dir: String, prefix: String, rotation: PyRotation) -> Self {
+        Self {
+            dir,
+            prefix,
+            rotation: rotation.into(),
+        }
+    }
 }
