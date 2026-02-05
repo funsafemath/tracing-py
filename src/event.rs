@@ -82,29 +82,6 @@ struct EventAction<'a, 'py> {
     kwargs: Option<&'a Bound<'py, PyDict>>,
 }
 
-pub fn leak_or_get_kwargs<'py>(
-    // todo: accept a mut ref
-    leaker: Option<Leaker>,
-    kwargs: Option<&Bound<'py, PyDict>>,
-) -> (
-    Vec<&'static str>,
-    Vec<PyCachedValuable<'py, QuoteStrAndTmpl, TemplateInterpolate>>,
-) {
-    let mut fields = vec![];
-    let mut values = vec![];
-
-    if let Some(kwargs) = kwargs {
-        let mut leaker = leaker.unwrap_or(Leaker::acquire());
-
-        for (key, value) in kwargs.iter() {
-            fields.push(leaker.leak_or_get(key.to_string()));
-            values.push(PyCachedValuable::<QuoteStrAndTmpl, TemplateInterpolate>::from(value));
-        }
-    }
-
-    (fields, values)
-}
-
 impl CallsiteAction for EventAction<'_, '_> {
     const KIND: Kind = Kind::EVENT;
     type ReturnType = ();
@@ -116,7 +93,17 @@ impl CallsiteAction for EventAction<'_, '_> {
         self,
         f: impl FnOnce(&'static [&'static str], &[Option<&dyn Value>]) -> Option<()>,
     ) -> Option<()> {
-        let (mut fields, values) = leak_or_get_kwargs(None, self.kwargs);
+        let mut fields = vec![];
+        let mut values = vec![];
+
+        if let Some(kwargs) = self.kwargs {
+            let mut leaker = Leaker::acquire();
+
+            for (key, value) in kwargs.iter() {
+                fields.push(leaker.leak_or_get(key.to_string()));
+                values.push(PyCachedValuable::<QuoteStrAndTmpl, TemplateInterpolate>::from(value));
+            }
+        }
 
         match self.message {
             Message::Any(Some(_)) | Message::PercentFormatted(_) => {
@@ -163,7 +150,7 @@ impl CallsiteAction for EventAction<'_, '_> {
     }
 }
 
-trait SingleFieldCallsite {
+pub trait SingleFieldCallsite {
     fn callsite(&self) -> &'static DefaultCallsite;
     fn from_callsite(callsite: &'static DefaultCallsite) -> Self;
 }
