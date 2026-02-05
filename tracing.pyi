@@ -92,18 +92,16 @@ class Format:
     This is primarily intended to be used in local
     development and debugging, or for command-line applications, where
     automated analysis and compact storage of logs is less of a priority than
-    readability and visual appeal. See [here](Pretty#example-output)
-    for sample output.
+    readability and visual appeal.
     """
 
     JSON: Format
     """
     Outputs newline-delimited JSON logs.
 
-    This is intended
-    for production use with systems where structured logs are consumed as JSON
+    This is intended for production use with systems where structured logs are consumed as JSON
     by analysis and viewing tools. The JSON output is not optimized for human
-    readability. See [here](Json#example-output) for sample output.
+    readability.
     """
 
 class File:
