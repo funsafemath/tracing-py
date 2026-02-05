@@ -1,0 +1,28 @@
+[package]
+name = "tracing-py"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "tracing"
+crate-type = ["cdylib"]
+
+[dependencies]
+eyre = "0.6.12"
+mimalloc = { version = "0.1.48", features = ["v3"] }
+pyo3 = { version = "0.27.2", features = ["eyre"] }
+rapidhash = { version = "4.2.1", features = ["unsafe", "nightly"] }
+tracing = { version = "0.1.44", features = ["valuable"] }
+tracing-appender = "0.2.4"
+tracing-core = "0.1.36"
+tracing-subscriber = { version = "0.3.22", features = ["json", "valuable"] }
+valuable = "0.1.1"
+
+[patch.crates-io]
+valuable = { path = "./valuable/valuable" }
+valuable-serde = { path = "./valuable/valuable-serde" }
+
+# [profile.release]
+# lto = true
+# codegen-units = 1
