@@ -1,9 +1,16 @@
-use pyo3::{prelude::*, types::PyTuple};
+use pyo3::{prelude::*, sync::PyOnceLock, types::PyTuple};
 
 use crate::{ext::any::infallible_attr, py_type::mk_imported_type};
 
-// todo: use conditional compilation
 mk_imported_type!(PyTemplate, "string.templatelib", "Template");
+
+impl PyTemplate {
+    // todo: conditional compilation would be much better
+    pub fn is_supported(py: Python<'_>) -> bool {
+        static TEMPALTES_SUPPORTED: PyOnceLock<bool> = PyOnceLock::new();
+        *TEMPALTES_SUPPORTED.get_or_init(py, || py.version_info() >= (3, 14))
+    }
+}
 
 pub trait PyTemplateMethods<'py> {
     fn strings(&self) -> Bound<'py, PyTuple>;
