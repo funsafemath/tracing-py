@@ -1,7 +1,11 @@
 # Most docstrings are copied from the tracing crate
 
-from string.templatelib import Template
 from typing import Any, Callable, Self, Sequence, TypeVar, overload
+
+try:
+    from string.templatelib import Template  # type: ignore[import-not-found]
+except ImportError:
+    from typing import Never as Template
 
 class Level:
     """Describes the level of verbosity of a span or event."""
@@ -117,12 +121,30 @@ class NonBlocking:
     COMPLETE: NonBlocking
     """backpressure will be exerted on senders, blocking them until the buffer has capacity again"""
 
+class Rotation:
+    """Defines a fixed period for rolling of a log file."""
+
+    MINUTELY: Rotation
+    """Provides a minutely rotation."""
+
+    HOURLY: Rotation
+    """Provides an hourly rotation."""
+
+    DAILY: Rotation
+    """Provides a daily rotation."""
+
+    WEEKLY: Rotation
+    """Provides a weekly rotation that rotates every Sunday at midnight UTC."""
+
+    NEVER: Rotation
+    """Provides a rotation that never rotates."""
+
 class FmtLayer:
     def __new__(
         cls,
         *,
         log_level: Level = Level.INFO,
-        file: File | str = File.STDOUT,
+        file: str | File | RollingLog = File.STDOUT,
         format: Format = Format.FULL,
         fmt_span: FmtSpan = FmtSpan.NONE,
         non_blocking: NonBlocking | None = None,
@@ -146,6 +168,14 @@ class FmtLayer:
             if none, tracing will log messages in blocking mode, 
             if passed, I/O will be delegated to a separate non-GIL-bound thread
     """
+
+class RollingLog:
+    def __new__(
+        cls,
+        dir: str,
+        prefix: str,
+        rotation: Rotation,
+    ) -> Self: ...
 
 def init(registry: FmtLayer | Sequence[FmtLayer] | None = None) -> None: ...
 @overload
@@ -171,6 +201,7 @@ def error(message: str, fmt_args: tuple[Any, ...], **kwargs) -> None: ...
 
 T = TypeVar("T", bound=Callable)
 
+# is there a way to express dependent types that's supported by most typecheckers? i don't like repeating the signature twice
 @overload
 def instrument(
     func: None = None,
@@ -182,6 +213,9 @@ def instrument(
     ret: bool = False,
     ret_err_only: bool = False,
     no_yield: bool = False,
+    ret_level: Level | None = None,
+    err_level: Level | None = None,
+    yield_level: Level | None = None,
 ) -> Callable[[T], T]: ...
 @overload
 def instrument(
@@ -213,4 +247,6 @@ __all__ = [
     "File",
     "FmtSpan",
     "NonBlocking",
+    "RollingLog",
+    "Rotation",
 ]
