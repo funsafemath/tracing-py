@@ -2,7 +2,7 @@ use pyo3::{IntoPyObjectExt, prelude::*, types::PyType};
 use tracing::Span;
 
 use crate::{
-    event::{ErrCallsite, RetCallsite, YieldCallsite},
+    event::{ErrCallsite, RetCallsite},
     ext::any::infallible_attr,
     imports::get_coroutine_type,
     instrument::fn_types::generator::{GeneratorType, InstrumentedGenerator},
@@ -14,7 +14,6 @@ pub struct InstrumentedCoroutine {
     span: Span,
     ret_callsite: Option<RetCallsite>,
     err_callsite: Option<ErrCallsite>,
-    yield_callsite: Option<YieldCallsite>,
     gen_type: GeneratorType,
 }
 
@@ -24,7 +23,6 @@ impl InstrumentedCoroutine {
         span: Span,
         ret_callsite: Option<RetCallsite>,
         err_callsite: Option<ErrCallsite>,
-        yield_callsite: Option<YieldCallsite>,
         gen_type: GeneratorType,
     ) -> Self {
         Self {
@@ -32,7 +30,6 @@ impl InstrumentedCoroutine {
             span,
             ret_callsite,
             err_callsite,
-            yield_callsite,
             gen_type,
         }
     }
@@ -66,7 +63,8 @@ impl InstrumentedCoroutine {
             self.span.clone(),
             self.ret_callsite,
             self.err_callsite,
-            self.yield_callsite,
+            // yield_callsite in this case will just log <Future Pending> on (some) await points, which isn't useful
+            None,
             self.gen_type,
         )
         .into_py_any(py)

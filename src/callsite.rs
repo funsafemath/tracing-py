@@ -96,6 +96,14 @@ fn is_callsite_enabled(callsite: &'static DefaultCallsite) -> bool {
                     && tracing::__macro_support::__is_enabled(callsite.metadata(), interest)
 }
 
+fn is_level_enabled(level: Level) -> bool {
+    level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current()
+}
+
+pub fn is_enabled(callsite: &'static DefaultCallsite) -> bool {
+    is_level_enabled(*callsite.metadata().level()) && is_callsite_enabled(callsite)
+}
+
 // todo: callsite already has it's own level, so passing both level and callsite is meaningless
 // also, if callsite is known, we don't need fields, so with_values function should be added
 pub fn do_action<A: CallsiteAction>(
@@ -104,7 +112,7 @@ pub fn do_action<A: CallsiteAction>(
     action: A,
     callsite: Option<&'static DefaultCallsite>,
 ) -> Option<A::ReturnType> {
-    if level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current() {
+    if is_level_enabled(level) {
         if callsite.is_some_and(|x| !is_callsite_enabled(x)) {
             return None;
         }
