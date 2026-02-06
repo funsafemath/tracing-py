@@ -3,7 +3,8 @@ use std::{
     io::{stderr, stdout},
 };
 
-use pyo3::{Bound, PyResult};
+use pyo3::{Bound, PyResult, exceptions::PyRuntimeError};
+use time::UtcOffset;
 use tracing::Level;
 use tracing_appender::{
     non_blocking::{NonBlockingBuilder, WorkerGuard},
@@ -14,13 +15,22 @@ use tracing_subscriber::{
     Layer, Registry,
     fmt::{
         self, FormatEvent, FormatFields, MakeWriter,
-        format::{self},
+        format::{self, DefaultFields, Format},
+        time::{FormatTime, OffsetTime, Uptime, UtcTime},
     },
 };
 
 use crate::layer::{
     ThreadSafeLayer,
-    fmt::{FmtLayer, Format, LogFile, file::NonBlocking},
+    fmt::{
+        FmtLayer, LogFile, PyFormat,
+        file::NonBlocking,
+        time::{
+            format::TimeFormat,
+            formats::{ISO8601, ISO8601_NO_SUBSECONDS},
+            timer::{PyTimer, Time, Timer},
+        },
+    },
 };
 
 pub trait ToDynLayer {
@@ -36,7 +46,7 @@ impl ToDynLayer for Bound<'_, FmtLayer> {
             fmt_span,
             non_blocking,
             log_internal_errors,
-            without_time,
+            timer,
             with_ansi,
             with_file,
             with_level,
@@ -82,14 +92,14 @@ impl ToDynLayer for Bound<'_, FmtLayer> {
             layer,
             *log_level,
             *format,
-            *without_time,
+            timer.as_ref(),
             file,
             *non_blocking,
         )
     }
 }
 
-type RFmtLayer<N, E, T, W> = fmt::Layer<Registry, N, format::Format<E, T>, W>;
+type RFmtLayer<N, E, T, W> = fmt::Layer<Registry, N, Format<E, T>, W>;
 trait Writer = for<'writer> MakeWriter<'writer> + Send + Sync + 'static;
 trait TimeFmt = fmt::time::FormatTime + Send + Sync + 'static;
 trait FieldFmt = Send + Sync + 'static + for<'a> FormatFields<'a>;
@@ -101,10 +111,10 @@ fn set_level_and_finish<F, L, T, W>(
     level: Level,
 ) -> Box<dyn ThreadSafeLayer>
 where
-    format::Format<L, T>: FormatEvent<Registry, F>,
+    Format<L, T>: FormatEvent<Registry, F>,
     F: FieldFmt,
     L: LogFmt,
-    T: TimeFmt,
+    T: FormatTime + Send + Sync + 'static,
     W: Writer,
 {
     // no need to use a filter that filters nothing
@@ -119,66 +129,109 @@ where
 fn set_format_and_rest<F, L, T, W>(
     layer: RFmtLayer<F, L, T, W>,
     level: Level,
-    format: Format,
+    format: PyFormat,
 ) -> Box<dyn ThreadSafeLayer>
 where
-    format::Format<L, T>: FormatEvent<Registry, F>,
+    Format<L, T>: FormatEvent<Registry, F>,
     F: FieldFmt,
     L: LogFmt,
-    T: TimeFmt,
+    T: FormatTime + Send + Sync + 'static,
     W: Writer,
 {
     match format {
-        Format::Full => set_level_and_finish(layer, level),
-        Format::Compact => set_level_and_finish::<F, format::Compact, T, W>(layer.compact(), level),
-        Format::Pretty => {
+        PyFormat::Full => set_level_and_finish(layer, level),
+        PyFormat::Compact => {
+            set_level_and_finish::<F, format::Compact, T, W>(layer.compact(), level)
+        }
+        PyFormat::Pretty => {
             set_level_and_finish::<format::Pretty, format::Pretty, T, W>(layer.pretty(), level)
         }
-        Format::Json => {
+        PyFormat::Json => {
             set_level_and_finish::<format::JsonFields, format::Json, T, W>(layer.json(), level)
         }
     }
 }
 
 // this is literally typeslop, who thought using types to parametrize your structs is a good idea
-fn set_without_time_and_rest<F, L, T, W>(
-    layer: RFmtLayer<F, L, T, W>,
+fn set_without_time_and_rest<W>(
+    layer: fmt::Layer<Registry, DefaultFields, Format<format::Full>, W>,
     level: Level,
-    format: Format,
-    without_time: bool,
-) -> Box<dyn ThreadSafeLayer>
+    format: PyFormat,
+    timer: Option<&PyTimer>,
+) -> PyResult<Box<dyn ThreadSafeLayer>>
 where
-    format::Format<L, T>: FormatEvent<Registry, F>,
-    format::Format<L, ()>: FormatEvent<Registry, F>,
-    F: FieldFmt,
-    L: LogFmt,
-    T: TimeFmt,
     W: Writer,
 {
-    if without_time {
-        set_format_and_rest(layer.without_time(), level, format)
-    } else {
-        set_format_and_rest(layer, level, format)
-    }
+    Ok(match timer {
+        Some(fmt) => match fmt.timer() {
+            Timer::SystemTime => set_format_and_rest(layer, level, format),
+            Timer::Uptime => {
+                set_format_and_rest(layer.with_timer(Uptime::default()), level, format)
+            }
+            Timer::Custom(time, time_format) => match time {
+                Time::Utc => match &time_format {
+                    TimeFormat::Custom(owned_format_item) => set_format_and_rest(
+                        layer.with_timer(UtcTime::new(owned_format_item.clone())),
+                        level,
+                        format,
+                    ),
+                    TimeFormat::Predefined(predefined) => set_format_and_rest(
+                        layer.with_timer(UtcTime::new(*predefined)),
+                        level,
+                        format,
+                    ),
+                    TimeFormat::Iso8601 => {
+                        set_format_and_rest(layer.with_timer(UtcTime::new(ISO8601)), level, format)
+                    }
+                    TimeFormat::Iso8601NoSubseconds => set_format_and_rest(
+                        layer.with_timer(UtcTime::new(ISO8601_NO_SUBSECONDS)),
+                        level,
+                        format,
+                    ),
+                },
+                Time::Local => {
+                    let offset = UtcOffset::current_local_offset()
+                        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+                    match time_format {
+                        TimeFormat::Custom(owned_format_item) => set_format_and_rest(
+                            layer.with_timer(OffsetTime::new(offset, owned_format_item.clone())),
+                            level,
+                            format,
+                        ),
+                        TimeFormat::Predefined(predefined) => set_format_and_rest(
+                            layer.with_timer(OffsetTime::new(offset, *predefined)),
+                            level,
+                            format,
+                        ),
+                        TimeFormat::Iso8601 => set_format_and_rest(
+                            layer.with_timer(OffsetTime::new(offset, ISO8601)),
+                            level,
+                            format,
+                        ),
+                        TimeFormat::Iso8601NoSubseconds => set_format_and_rest(
+                            layer.with_timer(OffsetTime::new(offset, ISO8601_NO_SUBSECONDS)),
+                            level,
+                            format,
+                        ),
+                    }
+                }
+            },
+        },
+        None => set_format_and_rest(layer.without_time(), level, format),
+    })
 }
 
 // okay, it may be a good idea, but it's a nightmare to configure such types at runtime
 // mainly because all used types must be present during the compile time, yes
-fn set_writer_and_rest<F, L, T, W>(
-    layer: RFmtLayer<F, L, T, W>,
+fn set_writer_and_rest(
+    layer: fmt::Layer<Registry>,
     level: Level,
-    format: Format,
-    without_time: bool,
+    format: PyFormat,
+    timer: Option<&PyTimer>,
     file: &LogFile,
     nonblocking: Option<NonBlocking>,
 ) -> PyResult<(Box<dyn ThreadSafeLayer>, Option<WorkerGuard>)>
 where
-    format::Format<L, T>: FormatEvent<Registry, F>,
-    format::Format<L, ()>: FormatEvent<Registry, F>,
-    F: FieldFmt,
-    L: LogFmt,
-    T: TimeFmt,
-    W: Writer,
 {
     let mut opts = OpenOptions::new();
     let opts = opts.create(true).append(true);
@@ -203,20 +256,19 @@ where
                 rolling.prefix.clone(),
             )),
         };
-        let layer =
-            set_without_time_and_rest(layer.with_writer(writer), level, format, without_time);
-        (layer, Some(guard))
+        let layer = set_without_time_and_rest(layer.with_writer(writer), level, format, timer);
+        (layer?, Some(guard))
     } else {
         let layer = match file {
             LogFile::Stdout => {
-                set_without_time_and_rest(layer.with_writer(stdout), level, format, without_time)
+                set_without_time_and_rest(layer.with_writer(stdout), level, format, timer)
             }
             LogFile::Stderr => {
-                set_without_time_and_rest(layer.with_writer(stderr), level, format, without_time)
+                set_without_time_and_rest(layer.with_writer(stderr), level, format, timer)
             }
             LogFile::Path(path) => {
                 let file = opts.open(path)?;
-                set_without_time_and_rest(layer.with_writer(file), level, format, without_time)
+                set_without_time_and_rest(layer.with_writer(file), level, format, timer)
             }
             LogFile::Rolling(rolling) => {
                 let rolling = RollingFileAppender::new(
@@ -224,10 +276,10 @@ where
                     rolling.dir.clone(),
                     rolling.prefix.clone(),
                 );
-                set_without_time_and_rest(layer.with_writer(rolling), level, format, without_time)
+                set_without_time_and_rest(layer.with_writer(rolling), level, format, timer)
             }
         };
-        (layer, None)
+        (layer?, None)
     })
 }
 // todo: rewrite functions above using macros
