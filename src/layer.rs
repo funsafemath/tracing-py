@@ -1,7 +1,5 @@
 pub mod fmt;
 
-use std::io::stdout;
-
 use pyo3::{exceptions::PyRuntimeError, prelude::*, types::PyCFunction};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
@@ -30,13 +28,11 @@ pub fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()>
         }
     } else {
         // todo: ensure that this default layer is equal to the default FmtLayer()
-        let (writer, guard) = tracing_appender::non_blocking(stdout());
-        let layer = tracing_subscriber::fmt::layer()
-            .with_writer(writer)
-            .with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
+        // not using non-blocking logger by default, as it may drop some logs due to 1-second timeout
+        let layer = tracing_subscriber::fmt::layer().with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
         let dyn_layer: Box<dyn ThreadSafeLayer> = Box::new(layer);
 
-        vec![(dyn_layer, Some(guard))]
+        vec![(dyn_layer, None)]
     };
 
     let (layers, guards): (Vec<_>, Vec<_>) = layers_with_guards.into_iter().unzip();

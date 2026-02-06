@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use tracing_appender::rolling::Rotation;
 
-#[pyclass(name = "Rotation")]
+#[pyclass(name = "Rotation", from_py_object)]
 #[derive(Clone, Copy)]
 pub enum PyRotation {
     #[pyo3(name = "MINUTELY")]

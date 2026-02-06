@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use pyo3::{
-    ffi::{self, PyEval_GetGlobals},
+    ffi::PyEval_GetGlobals,
     prelude::*,
     types::{PyCode, PyFrame, PyString},
 };
