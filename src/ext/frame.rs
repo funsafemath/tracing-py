@@ -42,6 +42,7 @@ impl<'py> PyFrameMethodsExt<'py> for Bound<'py, PyFrame> {
 
     fn code(&self) -> Bound<'py, PyCode> {
         let code = unsafe { PyFrame_GetCode(self.as_ptr().cast::<ffi::PyFrameObject>()) };
+
         // PyFrame_GetCode returns a strong reference, https://docs.python.org/3/c-api/frame.html#c.PyFrame_GetCode
         unsafe {
             Bound::from_owned_ptr(self.py(), code.cast::<ffi::PyObject>()).cast_into_unchecked()

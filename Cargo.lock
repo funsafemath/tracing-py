@@ -188,8 +188,7 @@ dependencies = [
 [[package]]
 name = "pyo3"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcf3ccafdf54c050be48a3a086d372f77ba6615f5057211607cd30e5ac5cec6d"
+source = "git+https://github.com/funsafemath/pyo3#aae15b6d86cd74a95e30173cb2adb3d0c42d5c65"
 dependencies = [
  "eyre",
  "inventory",
@@ -204,8 +203,7 @@ dependencies = [
 [[package]]
 name = "pyo3-build-config"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "972720a441c91fd9c49f212a1d2d74c6e3803b231ebc8d66c51efbd7ccab11c8"
+source = "git+https://github.com/funsafemath/pyo3#aae15b6d86cd74a95e30173cb2adb3d0c42d5c65"
 dependencies = [
  "target-lexicon",
 ]
@@ -213,8 +211,7 @@ dependencies = [
 [[package]]
 name = "pyo3-ffi"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5994456d9dab8934d600d3867571b6410f24fbd6002570ad56356733eb54859b"
+source = "git+https://github.com/funsafemath/pyo3#aae15b6d86cd74a95e30173cb2adb3d0c42d5c65"
 dependencies = [
  "libc",
  "pyo3-build-config",
@@ -223,8 +220,7 @@ dependencies = [
 [[package]]
 name = "pyo3-macros"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ce9cc8d81b3c4969748807604d92b4eef363c5bb82b1a1bdb34ec6f1093a18"
+source = "git+https://github.com/funsafemath/pyo3#aae15b6d86cd74a95e30173cb2adb3d0c42d5c65"
 dependencies = [
  "proc-macro2",
  "pyo3-macros-backend",
@@ -235,8 +231,7 @@ dependencies = [
 [[package]]
 name = "pyo3-macros-backend"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaf4b60036a154d23282679b658e3cc7d88d3b8c9a40b43824785f232d2e1b98"
+source = "git+https://github.com/funsafemath/pyo3#aae15b6d86cd74a95e30173cb2adb3d0c42d5c65"
 dependencies = [
  "heck",
  "proc-macro2",
