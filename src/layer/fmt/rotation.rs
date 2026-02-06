@@ -1,18 +1,13 @@
 use pyo3::prelude::*;
 use tracing_appender::rolling::Rotation;
 
-#[pyclass(name = "Rotation", from_py_object)]
+#[pyclass(name = "Rotation", rename_all = "UPPERCASE", from_py_object)]
 #[derive(Clone, Copy)]
 pub enum PyRotation {
-    #[pyo3(name = "MINUTELY")]
     Minutely,
-    #[pyo3(name = "HOURLY")]
     Hourly,
-    #[pyo3(name = "DAILY")]
     Daily,
-    #[pyo3(name = "WEEKLY")]
     Weekly,
-    #[pyo3(name = "NEVER")]
     Never,
 }
 

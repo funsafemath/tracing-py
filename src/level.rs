@@ -1,18 +1,13 @@
 use pyo3::prelude::*;
 use tracing::Level;
 
-#[pyclass(name = "Level", from_py_object)]
+#[pyclass(name = "Level", rename_all = "UPPERCASE", from_py_object)]
 #[derive(Clone, Copy)]
 pub enum PyLevel {
-    #[pyo3(name = "TRACE")]
     Trace,
-    #[pyo3(name = "DEBUG")]
     Debug,
-    #[pyo3(name = "INFO")]
     Info,
-    #[pyo3(name = "WARN")]
     Warn,
-    #[pyo3(name = "ERROR")]
     Error,
 }
 

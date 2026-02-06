@@ -7,6 +7,43 @@ try:
 except ImportError:
     from typing import Never as Template
 
+class TimeFormat:
+    ISO_8601: TimeFormat
+    ISO8601_NO_SUBSECONDS: TimeFormat
+
+    YYYY_MM_DD_HH_MM_SS_OFFSET: TimeFormat
+    YYYY_MM_DD_HH_MM_SS: TimeFormat
+
+    MM_DD_HH_MM_SS_OFFSET: TimeFormat
+    MM_DD_HH_MM_SS: TimeFormat
+
+    HH_MM_SS_OFFSET: TimeFormat
+    HH_MM_SS: TimeFormat
+
+class Time:
+    UTC: Time
+    LOCAL: Time
+
+class Timer:
+    SYSTEM_TIME: Timer
+    UPTIME: Timer
+
+    HUMAN_YMD_TIME_UTC: Timer
+    HUMAN_MD_TIME_UTC: Timer
+    HUMAN_TIME_UTC: Timer
+
+    HUMAN_YMD_TIME_LOCAL: Timer
+    HUMAN_MD_TIME_LOCAL: Timer
+    HUMAN_TIME_LOCAL: Timer
+
+    HUMAN_YMD_TIME_LOCAL_NO_OFFSET: Timer
+    HUMAN_MD_TIME_LOCAL_NO_OFFSET: Timer
+    HUMAN_TIME_LOCAL_NO_OFFSET: Timer
+
+    def __new__(
+        cls, format: TimeFormat | str = TimeFormat.ISO_8601, time: Time = Time.UTC
+    ) -> Self: ...
+
 class Level:
     """Describes the level of verbosity of a span or event."""
 
@@ -147,7 +184,7 @@ class FmtLayer:
         fmt_span: FmtSpan = FmtSpan.NONE,
         non_blocking: NonBlocking | None = None,
         log_internal_errors: bool | None = None,
-        without_time: bool = False,
+        timer: Timer = Timer.SYSTEM_TIME,
         with_ansi: bool | None = None,
         with_file: bool | None = None,
         with_level: bool | None = None,
