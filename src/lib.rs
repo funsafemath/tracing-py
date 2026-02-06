@@ -46,5 +46,8 @@ mod tracing {
     };
 
     #[pymodule_export]
+    use super::leak::debug::leak_info;
+
+    #[pymodule_export]
     use super::instrument::py_instrument;
 }

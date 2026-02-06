@@ -1,3 +1,5 @@
+pub mod debug;
+
 use std::sync::{LazyLock, Mutex, MutexGuard};
 
 use rapidhash::RapidHashSet;
