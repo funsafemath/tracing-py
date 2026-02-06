@@ -43,6 +43,7 @@ class Timer:
     def __new__(
         cls, format: TimeFormat | str = TimeFormat.ISO_8601, time: Time = Time.UTC
     ) -> Self: ...
+    """See https://time-rs.github.io/book/api/format-description.html for format information"""
 
 class Level:
     """Describes the level of verbosity of a span or event."""
@@ -274,21 +275,3 @@ class LeakInfo:
     slices: Final[int]
 
 def leak_info() -> LeakInfo: ...
-
-__all__ = [
-    "init",
-    "instrument",
-    "trace",
-    "debug",
-    "info",
-    "warn",
-    "error",
-    "Level",
-    "FmtLayer",
-    "Format",
-    "File",
-    "FmtSpan",
-    "NonBlocking",
-    "RollingLog",
-    "Rotation",
-]
