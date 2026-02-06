@@ -1,6 +1,7 @@
 pub mod file;
 pub mod rotation;
 pub mod span;
+pub mod time;
 pub mod to_layer;
 
 use pyo3::prelude::*;
@@ -11,6 +12,7 @@ use crate::{
     layer::fmt::{
         file::{LogFile, NonBlocking},
         span::PyFmtSpan,
+        time::{PyTimeFormat, PyTimer},
     },
     level::PyLevel,
 };
@@ -19,11 +21,11 @@ use crate::{
 pub struct FmtLayer {
     log_level: Level,
     file: LogFile,
-    format: Format,
+    format: PyFormat,
     fmt_span: FmtSpan,
     non_blocking: Option<NonBlocking>,
     log_internal_errors: Option<bool>,
-    without_time: bool,
+    timer: Option<PyTimer>,
     with_ansi: Option<bool>,
     with_file: Option<bool>,
     with_level: Option<bool>,
@@ -45,11 +47,11 @@ impl FmtLayer {
         // tracing uses stdout by default, not sure why
         // https://github.com/tokio-rs/tracing/issues/2492
         file = LogFile::Stdout,
-        format = Format::Full,
+        format = PyFormat::Full,
         fmt_span = Python::attach(|x| {Py::new(x, PyFmtSpan::NONE)}).unwrap(),
         non_blocking = None,
         log_internal_errors = None,
-        without_time = false,
+        timer = Some(PyTimer::SYSTEM_TIME),
         with_ansi = None,
         with_file = None,
         with_level = None,
@@ -60,11 +62,11 @@ impl FmtLayer {
         py: Python,
         log_level: PyLevel,
         file: LogFile,
-        format: Format,
+        format: PyFormat,
         fmt_span: Py<PyFmtSpan>,
         non_blocking: Option<NonBlocking>,
         log_internal_errors: Option<bool>,
-        without_time: bool,
+        timer: Option<PyTimer>,
         with_ansi: Option<bool>,
         with_file: Option<bool>,
         with_level: Option<bool>,
@@ -79,7 +81,7 @@ impl FmtLayer {
             fmt_span: FmtSpan::from(&*fmt_span.borrow(py)),
             non_blocking,
             log_internal_errors,
-            without_time,
+            timer,
             with_ansi,
             with_file,
             with_level,
@@ -90,15 +92,11 @@ impl FmtLayer {
     }
 }
 
-#[pyclass(from_py_object)]
+#[pyclass(name = "Format", rename_all = "UPPERCASE", from_py_object)]
 #[derive(Clone, Copy)]
-pub enum Format {
-    #[pyo3(name = "FULL")]
+pub enum PyFormat {
     Full,
-    #[pyo3(name = "COMPACT")]
     Compact,
-    #[pyo3(name = "PRETTY")]
     Pretty,
-    #[pyo3(name = "JSON")]
     Json,
 }

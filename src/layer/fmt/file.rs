@@ -30,11 +30,9 @@ impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
     }
 }
 
-#[pyclass(name = "File")]
+#[pyclass(name = "File", rename_all = "UPPERCASE")]
 pub enum PyLogFile {
-    #[pyo3(name = "STDOUT")]
     Stdout,
-    #[pyo3(name = "STDERR")]
     Stderr,
 }
 
@@ -58,11 +56,9 @@ impl PyRollingLog {
     }
 }
 
-#[pyclass(from_py_object)]
+#[pyclass(rename_all = "UPPERCASE", from_py_object)]
 #[derive(Clone, Copy)]
 pub enum NonBlocking {
-    #[pyo3(name = "LOSSY")]
     Lossy,
-    #[pyo3(name = "COMPLETE")]
     Complete,
 }
