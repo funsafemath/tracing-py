@@ -31,7 +31,6 @@ impl<'a, 'py> FromPyObject<'a, 'py> for LogFile {
 }
 
 #[pyclass(name = "File")]
-#[derive(Clone)]
 pub enum PyLogFile {
     #[pyo3(name = "STDOUT")]
     Stdout,
@@ -39,7 +38,7 @@ pub enum PyLogFile {
     Stderr,
 }
 
-#[pyclass(name = "RollingLog")]
+#[pyclass(name = "RollingLog", from_py_object)]
 #[derive(Clone)]
 pub struct PyRollingLog {
     pub dir: String,
@@ -59,7 +58,7 @@ impl PyRollingLog {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub enum NonBlocking {
     #[pyo3(name = "LOSSY")]

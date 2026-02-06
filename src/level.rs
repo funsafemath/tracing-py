@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use tracing::Level;
 
-#[pyclass(name = "Level")]
+#[pyclass(name = "Level", from_py_object)]
 #[derive(Clone, Copy)]
 pub enum PyLevel {
     #[pyo3(name = "TRACE")]

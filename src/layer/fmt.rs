@@ -90,7 +90,7 @@ impl FmtLayer {
     }
 }
 
-#[pyclass]
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub enum Format {
     #[pyo3(name = "FULL")]

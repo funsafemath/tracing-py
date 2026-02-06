@@ -167,7 +167,7 @@ fn instrument<'py>(
     .into_any())
 }
 
-#[pyclass]
+#[pyclass(skip_from_py_object)]
 #[derive(Clone, Default)]
 struct InstrumentOptions {
     levels: LevelOverrides,
