@@ -3,12 +3,17 @@ pub mod fmt;
 use pyo3::{exceptions::PyRuntimeError, prelude::*, types::PyCFunction};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{
-    FmtSubscriber, Layer, Registry, layer::SubscriberExt, registry, util::SubscriberInitExt,
+    FmtSubscriber, Layer, Registry, fmt::time::UtcTime, layer::SubscriberExt, registry,
+    util::SubscriberInitExt,
 };
 
 use crate::{
     imports::get_atexit_register,
-    layer::fmt::{FmtLayer, to_layer::ToDynLayer},
+    layer::fmt::{
+        FmtLayer,
+        time::formats::{ISO8601, YYYY_MM_DD_HH_MM_SS},
+        to_layer::ToDynLayer,
+    },
 };
 
 trait ThreadSafeLayer = Layer<Registry> + Send + Sync;
@@ -27,9 +32,10 @@ pub fn py_init(py: Python<'_>, layers: Option<Bound<'_, PyAny>>) -> PyResult<()>
             vec![layers.cast::<FmtLayer>()?.dyn_layer()?]
         }
     } else {
-        // todo: ensure that this default layer is equal to the default FmtLayer()
         // not using non-blocking logger by default, as it may drop some logs due to 1-second timeout
-        let layer = tracing_subscriber::fmt::layer().with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
+        let layer = tracing_subscriber::fmt::layer()
+            .with_timer(UtcTime::new(YYYY_MM_DD_HH_MM_SS))
+            .with_filter(FmtSubscriber::DEFAULT_MAX_LEVEL);
         let dyn_layer: Box<dyn ThreadSafeLayer> = Box::new(layer);
 
         vec![(dyn_layer, None)]
