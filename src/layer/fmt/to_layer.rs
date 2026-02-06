@@ -153,7 +153,7 @@ where
 }
 
 // this is literally typeslop, who thought using types to parametrize your structs is a good idea
-fn set_without_time_and_rest<W>(
+fn set_timer_and_rest<W>(
     layer: fmt::Layer<Registry, DefaultFields, Format<format::Full>, W>,
     level: Level,
     format: PyFormat,
@@ -256,19 +256,15 @@ where
                 rolling.prefix.clone(),
             )),
         };
-        let layer = set_without_time_and_rest(layer.with_writer(writer), level, format, timer);
+        let layer = set_timer_and_rest(layer.with_writer(writer), level, format, timer);
         (layer?, Some(guard))
     } else {
         let layer = match file {
-            LogFile::Stdout => {
-                set_without_time_and_rest(layer.with_writer(stdout), level, format, timer)
-            }
-            LogFile::Stderr => {
-                set_without_time_and_rest(layer.with_writer(stderr), level, format, timer)
-            }
+            LogFile::Stdout => set_timer_and_rest(layer.with_writer(stdout), level, format, timer),
+            LogFile::Stderr => set_timer_and_rest(layer.with_writer(stderr), level, format, timer),
             LogFile::Path(path) => {
                 let file = opts.open(path)?;
-                set_without_time_and_rest(layer.with_writer(file), level, format, timer)
+                set_timer_and_rest(layer.with_writer(file), level, format, timer)
             }
             LogFile::Rolling(rolling) => {
                 let rolling = RollingFileAppender::new(
@@ -276,7 +272,7 @@ where
                     rolling.dir.clone(),
                     rolling.prefix.clone(),
                 );
-                set_without_time_and_rest(layer.with_writer(rolling), level, format, timer)
+                set_timer_and_rest(layer.with_writer(rolling), level, format, timer)
             }
         };
         (layer?, None)
