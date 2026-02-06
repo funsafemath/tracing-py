@@ -37,10 +37,13 @@ mod tracing {
     #[pymodule_export]
     use super::layer::{
         fmt::{
-            FmtLayer, Format,
+            FmtLayer, PyFormat,
             file::{NonBlocking, PyLogFile, PyRollingLog},
             rotation::PyRotation,
             span::PyFmtSpan,
+            time::format::PyTimeFormat,
+            time::timer::PyTimer,
+            time::timer::Time,
         },
         py_init,
     };
