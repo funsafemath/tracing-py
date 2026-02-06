@@ -11,12 +11,18 @@ crate-type = ["cdylib"]
 [dependencies]
 eyre = "0.6.12"
 mimalloc = { version = "0.1.48", features = ["v3"] }
-pyo3 = { version = "0.27.2", features = ["eyre"] }
+pyo3 = { version = "0.28.0", features = ["eyre", "multiple-pymethods"] }
 rapidhash = { version = "4.2.1", features = ["unsafe", "nightly"] }
+time = { version = "0.3.47", features = ["macros"] }
 tracing = { version = "0.1.44", features = ["valuable"] }
 tracing-appender = "0.2.4"
 tracing-core = "0.1.36"
-tracing-subscriber = { version = "0.3.22", features = ["json", "valuable"] }
+tracing-subscriber = { version = "0.3.22", features = [
+    "json",
+    "valuable",
+    "time",
+    "local-time",
+] }
 valuable = "0.1.1"
 
 [patch.crates-io]
