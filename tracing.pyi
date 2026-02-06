@@ -238,6 +238,15 @@ class LeakInfo:
 
 def leak_info() -> LeakInfo: ...
 
+class TimeFormat:
+    pass
+
+class Timer:
+    pass
+
+class Time:
+    pass
+
 __all__ = [
     "init",
     "instrument",
