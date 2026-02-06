@@ -18,6 +18,15 @@ use crate::{
     introspect::Inspector,
 };
 
+// no need to use rwlock/dashmap as we're forced into singlethreaded execution by GIL
+// turns out pyo3 has free-threaded python support, so it may be better to use an rwlock
+static CALLSITES: LazyLock<Mutex<RapidHashMap<CallsiteIdentifier, &'static DefaultCallsite>>> =
+    LazyLock::new(Mutex::default);
+
+pub fn leaked_callsites_count() -> usize {
+    CALLSITES.lock().unwrap().len()
+}
+
 #[derive(Clone)]
 pub enum Context<'py> {
     FromThreadState(Python<'py>),
@@ -47,11 +56,6 @@ pub fn get_or_init_callsite(
     fields: &'static [&'static str],
     kind: Kind,
 ) -> &'static DefaultCallsite {
-    // no need to use rwlock/dashmap as we're forced into singlethreaded execution by GIL
-    // turns out pyo3 has free-threaded python support, so it may be better to use an rwlock
-    static CALLSITES: LazyLock<Mutex<RapidHashMap<CallsiteIdentifier, &'static DefaultCallsite>>> =
-        LazyLock::new(Mutex::default);
-
     let (frame, code) = ctx.frame_and_code();
 
     let inspector = Inspector::new(&frame);
