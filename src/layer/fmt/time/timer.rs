@@ -17,7 +17,7 @@ pub enum Timer {
 }
 
 // yes, from_py_object for non-trivially copyable types is inefficient, but who cares, it's for python, and it'll be called
-// at most few times when the program starts
+// at most a few times when the program starts
 #[pyclass(name = "Timer", from_py_object)]
 #[derive(Clone)]
 pub struct PyTimer(Timer);
