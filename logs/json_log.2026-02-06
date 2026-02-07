@@ -1,0 +1,63 @@
+{"timestamp":"2026-02-06T22:20:19.031031Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:20:19.031097Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:20:19.031152Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:20:19.031179Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:20:19.031202Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:17.705254Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:17.705489Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:17.705557Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:17.705591Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:17.705616Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:23.680680Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:23.680795Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:23.680912Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:23.681016Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:23.681089Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:26.476719Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:26.476791Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:26.476854Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:26.476886Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:26.476912Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:27.055659Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:27.055734Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:27.055797Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:27.055834Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:27.055863Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:36.559241Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:36.559319Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:36.559408Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:36.559445Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:36.559470Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:37.395153Z","level":"TRACE","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:37.395220Z","level":"DEBUG","fields":{"message":"Logged only to the file"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:37.395279Z","level":"INFO","fields":{"message":"Some useful information"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:37.395315Z","level":"WARN","fields":{"message":"A warning"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:21:37.395341Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:26:56.286958Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:26:56.287087Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:26:56.288435Z","level":"WARN","fields":{"message":"Hello, world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:26:56.288505Z","level":"ERROR","fields":{"message":"An error!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:25.065957Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:25.066108Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:25.066675Z","level":"WARN","fields":{"message":"Hello, world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:25.066773Z","level":"ERROR","fields":{"message":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:34.321612Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:34.321759Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:34.322214Z","level":"WARN","fields":{"message":"Hello, world!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:27:34.322275Z","level":"ERROR","fields":{"message":"Hello, world!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:07.426382Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:07.426492Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:07.426987Z","level":"WARN","fields":{"message":"Hello, world!","warning":1},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:07.427055Z","level":"ERROR","fields":{"message":"Hello, world!","error":2},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:23.660277Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:23.660470Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:23.661284Z","level":"WARN","fields":{"message":"Hello, world!","number":1},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:28:23.661478Z","level":"ERROR","fields":{"message":"Hello, world!","boolean":true},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:29:42.888016Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:29:42.888204Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:29:42.888782Z","level":"WARN","fields":{"message":"Hello, world!","t_strin_param":"Hi, world!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:29:42.888924Z","level":"ERROR","fields":{"message":"Hello, world!","a":true,"b":false,"c":123},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:51:48.329248Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:51:48.329416Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:51:48.332193Z","level":"WARN","fields":{"message":"Hello, world!","t_string_param":"Hi, world!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-06T22:51:48.332453Z","level":"ERROR","fields":{"message":"Hello, world!","a":true,"b":false,"c":123},"target":"MyClass.emit_logs"}
