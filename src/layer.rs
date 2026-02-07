@@ -9,11 +9,7 @@ use tracing_subscriber::{
 
 use crate::{
     imports::get_atexit_register,
-    layer::fmt::{
-        FmtLayer,
-        time::formats::{ISO8601, YYYY_MM_DD_HH_MM_SS},
-        to_layer::ToDynLayer,
-    },
+    layer::fmt::{FmtLayer, time::formats::YYYY_MM_DD_HH_MM_SS, to_layer::ToDynLayer},
 };
 
 trait ThreadSafeLayer = Layer<Registry> + Send + Sync;

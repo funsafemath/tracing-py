@@ -1,0 +1,4 @@
+{"timestamp":"2026-02-07T00:02:22.034464Z","level":"DEBUG","fields":{"message":"Logged only to the file","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-07T00:02:22.034635Z","level":"INFO","fields":{"message":"Some useful information","hello":"world"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-07T00:02:22.036498Z","level":"WARN","fields":{"message":"Hello, world!","t_string_param":"Hi, world!"},"target":"MyClass.emit_logs"}
+{"timestamp":"2026-02-07T00:02:22.036664Z","level":"ERROR","fields":{"message":"Hello, world!","a":true,"b":false,"c":123},"target":"MyClass.emit_logs"}
