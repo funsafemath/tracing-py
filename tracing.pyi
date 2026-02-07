@@ -185,7 +185,7 @@ class FmtLayer:
         fmt_span: FmtSpan = FmtSpan.NONE,
         non_blocking: NonBlocking | None = None,
         log_internal_errors: bool | None = None,
-        timer: Timer = Timer.SYSTEM_TIME,
+        timer: Timer | None = Timer.SYSTEM_TIME,
         with_ansi: bool | None = None,
         with_file: bool | None = None,
         with_level: bool | None = None,
