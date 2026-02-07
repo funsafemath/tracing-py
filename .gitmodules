@@ -1,3 +1,0 @@
-[submodule "valuable"]
-	path = valuable
-	url = https://github.com/tokio-rs/valuable
