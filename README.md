@@ -7,6 +7,7 @@ Some cool features:
 - Is quite good performance a feature?
 
 # Contents
+- [Installation](#installation)
 - [Examples](#examples)
   * [Simple Logging](#simple-logging)
   * [More Features](#more-features)
@@ -26,6 +27,16 @@ Some cool features:
 - [Performance](#performance)
 - [Warning](#warning)
 - [Missing Features](#missing-features)
+
+# Installation
+
+```sh
+uv add tracing-py
+```
+
+```sh
+pip install tracing-py
+```
 
 # Examples
 ## Simple Logging
