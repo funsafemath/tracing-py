@@ -2,6 +2,8 @@
 #![feature(trait_alias)]
 #![feature(decl_macro)]
 #![warn(clippy::allow_attributes)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
 
 mod cached;
 mod callsite;
