@@ -33,6 +33,8 @@ use crate::{
 // todo: allow instrumenting native functions
 // todo: warn/throw an error if attempting to skip a non-existent parameter
 // todo: warn/throw an error if trying to use log_yield on non-generator function
+// todo: if ret/err/yield level is larger than span level, the ret/err/yield events probably should be emitted
+// not sure though, but makes more sense than the current implementation
 //
 // overhead is predominantly caused by Span::new call, so optimizing this function is not a priority
 // 100 lines long spaghetti code lol

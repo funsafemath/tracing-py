@@ -19,13 +19,13 @@ impl PyRotation {
 }
 
 impl From<PyRotation> for Rotation {
-    fn from(value: PyRotation) -> Rotation {
+    fn from(value: PyRotation) -> Self {
         match value {
-            PyRotation::Minutely => Rotation::MINUTELY,
-            PyRotation::Hourly => Rotation::HOURLY,
-            PyRotation::Daily => Rotation::DAILY,
-            PyRotation::Weekly => Rotation::WEEKLY,
-            PyRotation::Never => Rotation::NEVER,
+            PyRotation::Minutely => Self::MINUTELY,
+            PyRotation::Hourly => Self::HOURLY,
+            PyRotation::Daily => Self::DAILY,
+            PyRotation::Weekly => Self::WEEKLY,
+            PyRotation::Never => Self::NEVER,
         }
     }
 }
