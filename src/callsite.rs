@@ -100,7 +100,7 @@ fn is_callsite_enabled(callsite: &'static DefaultCallsite) -> bool {
                     && tracing::__macro_support::__is_enabled(callsite.metadata(), interest)
 }
 
-fn is_level_enabled(level: Level) -> bool {
+pub fn is_level_enabled(level: Level) -> bool {
     level <= level_filters::STATIC_MAX_LEVEL && level <= LevelFilter::current()
 }
 
