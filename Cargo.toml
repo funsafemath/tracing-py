@@ -26,8 +26,8 @@ tracing-subscriber = { version = "0.3.22", features = [
 valuable = "0.1.1"
 
 [patch.crates-io]
-valuable = { git = "https://codeberg.org/funsafemath/pyvaluable" }
-valuable-serde = { git = "https://codeberg.org/funsafemath/pyvaluable" }
+valuable = { git = "https://codeberg.org/funsafemath/valuable-py" }
+valuable-serde = { git = "https://codeberg.org/funsafemath/valuable-py" }
 pyo3 = { git = "https://github.com/PyO3/pyo3" }
 
 [profile.release]
