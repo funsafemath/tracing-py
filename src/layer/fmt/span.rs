@@ -27,11 +27,11 @@ impl PyFmtSpan {
     #[classattr]
     pub const FULL: Self = Self(FmtSpan::FULL);
 
-    fn __or__(&self, other: Bound<'_, Self>) -> Self {
+    fn __or__(&self, other: &Bound<'_, Self>) -> Self {
         Self(self.0.clone() | other.borrow().0.clone())
     }
 
-    fn __and__(&self, other: Bound<'_, Self>) -> Self {
+    fn __and__(&self, other: &Bound<'_, Self>) -> Self {
         Self(self.0.clone() & other.borrow().0.clone())
     }
 

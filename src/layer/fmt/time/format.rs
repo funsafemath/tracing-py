@@ -10,9 +10,9 @@ pub enum TimeFormat {
 }
 
 impl TimeFormat {
-    pub fn new(format: String) -> PyResult<Self> {
+    pub fn new(format: &str) -> PyResult<Self> {
         Ok(Self::Custom(
-            format_description::parse_owned::<2>(&format)
+            format_description::parse_owned::<2>(format)
                 .map_err(|e| PyValueError::new_err(e.to_string()))?,
         ))
     }
