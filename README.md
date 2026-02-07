@@ -375,7 +375,7 @@ The current implementation creates a `'static` lifetime object for each unique c
 A callsite is identified by the bytecode instruction address, logging level, a set of logged fields, and the kind of the callsite (event/span, spans are currently available only through the instrument decorator). Also filenames, keyword parameter names are leaked (one time for each unique string, of course), and field combinations are leaked, too.
 
 This means you should not:
-- Use tracing in dynamically compiled code (eval)
+- Use tracing in dynamically compiled code (eval/exec)
 
 - Pass `**kwargs` to logging functions if you except the number of possible kwarg names or their different combinations to be very large. Calling a logging function with `**{a:..., b: ...}`, `**{a: ..., c: ...}`, `**{b: ..., c: ...}` will cause arrays `[&a, &b]`, `[&a, &c]`, `[&b, &c]` to be leaked. Different permutations are leaked, too, so creating kwargs from unordered collections may cause problems (according to the python specification, both passed kwargs and dicts are ordered).
 
