@@ -19,6 +19,7 @@ warn("A warning")
 error("An error!")
 ```
 
+![[simple.png]]
 ## More Features
 ```python
 import tracing
@@ -64,6 +65,8 @@ tracing.init([stdout_layer, file_layer])
 
 class MyClass:
     def emit_logs(self):
+        world = "world"
+
         # There's no layer with TRACE level, so event is skipped
         # The cost of calling a logging funciton in this case 
         # is comparable to the cost of calling an empty function
@@ -92,7 +95,8 @@ MyClass().emit_logs()
 
 
 ```
-
+![[features_pretty.png]]
+![[features_json.png]]
 # Instrumentation
 
 ```python
@@ -149,7 +153,9 @@ async def main():
         FmtLayer(
 	        # log span close events, by default no span events are logged
             fmt_span=FmtSpan.CLOSE,
-            timer=Timer.HUMAN_YMD_TIME_UTC,
+            # format documentation is available at https://time-rs.github.io/book/api/format-description.html
+            # second argument may be specified to use local time instead of UTC 
+            timer=Timer("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond digits:6]"),
             # Try uncommenting this
             # format=Format.PRETTY,
             with_target=True,
@@ -166,6 +172,11 @@ asyncio.run(main())
 
 ```
 
+Default formatting:
+![[instrument_default.png]]
+
+Pretty formatting:
+![[instrument_pretty.png]]
 # Documentation, I guess
 
 ## Logging Events
