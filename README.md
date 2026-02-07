@@ -5,8 +5,29 @@ Some cool features:
 - Non-blocking logging, the logging thread isn't bound by GIL
 - Spans, available though instrument() decorator
 - Is quite good performance a feature?
-# Examples
 
+# Contents
+- [Examples](#examples)
+  * [Simple Logging](#simple-logging)
+  * [More Features](#more-features)
+  * [Instrumentation](#instrumentation)
+- [Documentation, I guess](#documentation-i-guess)
+  * [Logging Events](#logging-events)
+  * [FmtLayer](#fmtlayer)
+    + [Configuring Log Level](#configuring-log-level)
+    + [Logging to stderr or a file, Rolling Logging](#logging-to-stderr-or-a-file-rolling-logging)
+    + [Non-Blocking Logging](#non-blocking-logging)
+    + [Log Format](#log-format)
+    + [Using Local Time and Custom Time Formatting](#using-local-time-and-custom-time-formatting)
+  * [Logging Notes](#logging-notes)
+  * [Instrumentation](#instrumentation-1)
+  * [Template Strings](#template-strings)
+    + [Overhead](#overhead)
+- [Performance](#performance)
+- [Warning](#warning)
+- [Missing Features](#missing-features)
+
+# Examples
 ## Simple Logging
 ```python
 import tracing  
@@ -19,7 +40,7 @@ warn("A warning")
 error("An error!")
 ```
 
-![[simple.png]]
+![](assets/simple.png)
 ## More Features
 ```python
 import tracing
@@ -95,9 +116,9 @@ MyClass().emit_logs()
 
 
 ```
-![[features_pretty.png]]
-![[features_json.png]]
-# Instrumentation
+![](assets/features_pretty.png)
+![](assets/features_json.png)
+## Instrumentation
 
 ```python
 import asyncio
@@ -173,10 +194,12 @@ asyncio.run(main())
 ```
 
 Default formatting:
-![[instrument_default.png]]
+
+![](assets/instrument_default.png)
 
 Pretty formatting:
-![[instrument_pretty.png]]
+
+![](assets/instrument_pretty.png)
 # Documentation, I guess
 
 ## Logging Events
@@ -215,7 +238,7 @@ If no `FmtLayer`s are passed, a `FmtLayer` with `YYYY-MM-DD HH:MM:SS` time forma
 tracing.init(FmtLayer(log_level=Level.ERROR))
 ```
 
-### Logging to Stderr or a File, Rolling Logging
+### Logging to stderr or a file, Rolling Logging
 
 `FmtLayer` constructor has a `file` parameter, which can be a string (path to the file), a `tracing.File` object, which has 2 variants, `File.STDOUT` and `File.STDERR`, or a `tracing.RollingLog` object.
 
@@ -298,6 +321,7 @@ See https://time-rs.github.io/book/api/format-description.html for the format do
 ## Logging Notes
 
 Objects are logged using their `__repr__` method
+
 Only integers in range `-2^127` to `2^127-1` are logged as integers when using structured (JSON) logging; anything outside this range is logged as a string; if there's an exception raised during the conversion, it'll be logged as `<unprintable int object>`
 
 Yes, it's inconsistent, but I don't think that either raising an exception or not logging the value is acceptable
@@ -378,7 +402,7 @@ If the event level is less than the configured threshold, the overhead of callin
 
 When using blocking logging, this library is generally faster than structlog (with performance-oriented config, https://www.structlog.org/en/stable/performance.html) if the message length is <= 8kb, and slower if the message length is longer. Not sure why that's a thing, maybe orjson reencodes strings really fast? 
 
-# Warning (!)
+# Warning
 
 This library leaks unbounded amount of memory if you misuse it.
 
@@ -396,7 +420,8 @@ If you are not doing any of these, you should be fine. If you leak too much obje
 
 There's a `leak_info()` function available that returns an object containing information about leaked objects counts.
 
-# Some missing features that'll be added
+# Missing Features
+some missing features that will be added later
 
 Colorful error logging with their context, [color-eyre](https://crates.io/crates/color-eyre)-like
 
