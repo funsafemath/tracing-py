@@ -10,7 +10,7 @@ use valuable::Valuable;
 
 use crate::{
     cached::{CachedDisplay, CachedValue},
-    callsite::{self, CallsiteAction, Context},
+    callsite::{self, CallsiteAction, Context, is_level_enabled},
     formatting::{
         percent::PercentFormatted,
         valuable::{
@@ -28,7 +28,7 @@ macro_rules! py_event {
         pub fn $fn_name(
             py: Python<'_>,
             message: Option<Bound<'_, PyAny>>,
-            fmt_args: Option<&Bound<'_, PyTuple>>,
+            fmt_args: Option<&Bound<'_, PyAny>>,
             kwargs: Option<&Bound<'_, PyDict>>,
         ) -> PyResult<()> {
             event(py, $lvl, message, fmt_args, kwargs)
@@ -42,13 +42,19 @@ py_event!(py_info, "info", Level::INFO);
 py_event!(py_warn, "warn", Level::WARN);
 py_event!(py_error, "error", Level::ERROR);
 
+// accepts PyAny instead of PyTuple to defer the type check a bit
 fn event(
     py: Python,
     level: Level,
     message: Option<Bound<'_, PyAny>>,
-    fmt_args: Option<&Bound<'_, PyTuple>>,
+    fmt_args: Option<&Bound<'_, PyAny>>,
     kwargs: Option<&Bound<'_, PyDict>>,
 ) -> PyResult<()> {
+    // todo: rewrite CallsiteAction, so there's no repeated level check
+    if !is_level_enabled(level) {
+        return Ok(());
+    }
+
     let message = match fmt_args {
         Some(fmt_args) => {
             let Some(message) = message else {
@@ -63,7 +69,7 @@ fn event(
                         "if fmt_args is passed, the first argument must be a string: {x}"
                     ))
                 })?,
-                fmt_args,
+                fmt_args.cast::<PyTuple>()?,
             ))
         }
         None => Message::Any(message),
